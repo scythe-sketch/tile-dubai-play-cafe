@@ -9,7 +9,7 @@ export const Navigation = () => {
  const [active,setActive] = useState('');
  useEffect(() => {
   const update = () => {
-   const current = links.map(label => document.getElementById(label.toLowerCase())).filter((el): el is HTMLElement => Boolean(el)).filter(el => el.getBoundingClientRect().top <= 160).at(-1);
+   const current = links.map(label => document.getElementById(label.toLowerCase())).filter((el): el is HTMLElement => Boolean(el)).filter(el => el.getBoundingClientRect().top <= 160).slice(-1)[0];
    setActive(current?.id || '');
   };
   window.addEventListener('scroll',update,{passive:true}); update();

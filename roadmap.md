@@ -1,5 +1,5 @@
-# TILE redesign
-- [ ] Brand, navigation and tile-grid hero
-- [ ] Merged space, games, menu, events and coworking
-- [ ] Visit, metadata and optimized images
-- [ ] Verify interactions and 375px layout
+# TILE motion and content updates
+- [x] Restore subtle scroll entrances and photo motion; emphasize the moving you tile.
+- [x] Make all visible text lowercase and update location to Jumeirah Lake Towers.
+- [x] Populate clickable game categories; remove unwanted events and improve reservation contrast.
+- [x] Verify game/menu switching, scroll effects, and small-screen layout.
