@@ -4,3 +4,4 @@
 - Store optimized photo derivatives in the project and use lazy loading below the hero to preserve original imagery with smaller downloads.
 - Use semantic HSL tokens and scoped dark section themes for the alternating charcoal and cream design.
 - Use ScrollEffects for viewport entrances and photo drift, with reduced-motion support and visible content as the fallback; keep category transitions local to their sections.
+- Keep a single text bun.lock with public HTTPS npm tarball URLs and preserved integrity hashes; internal cache hostnames are not resolvable in all build environments.
