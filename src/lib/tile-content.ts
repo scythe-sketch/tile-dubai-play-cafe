@@ -6,7 +6,7 @@ export const instagramUrl = 'https://instagram.com/tiledubai';
 export const address = 'Grip Sports Club, Jumeirah Lake Towers, Dubai';
 export const gamesPrice = 30;
 export const googleMapsUrl = 'https://share.google/lpX3rw7tnS8ZIkqQQ';
-export const googleMapsEmbedUrl = 'https://www.google.com/maps?output=embed&q=TILE+Board+Game+Cafe&cid=2876476547628588618';
+export const googleMapsEmbedUrl = 'https://maps.google.com/maps?q=25.0630879,55.1415203&z=17&output=embed';
 export const gameCategories = [
  { name: 'Strategy', games: ['Catan', 'Ticket to Ride', 'Splendor', 'Azul', 'Pandemic'] },
  { name: 'Party', games: ['Codenames', 'Dixit', 'Exploding Kittens', 'Werewolf', 'The Mind'] },

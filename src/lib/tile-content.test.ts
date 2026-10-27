@@ -9,7 +9,7 @@ test('Event booking names the event',()=>expect(new URL(eventBookingUrl('Mahjong
 test('Community events lead with Mahjong Majlis and Play Days',()=>expect(events.slice(0,2).map(e=>e.name)).toEqual(['Mahjong Majlis','Play Days']));
 test('Empty price is hidden; numeric AED value is shown',()=>{expect(hasPrice(undefined)).toBe(false);expect(hasPrice(30)).toBe(true)});
 test('Location is Grip Sports Club in Jumeirah Lake Towers',()=>expect(address).toBe('Grip Sports Club, Jumeirah Lake Towers, Dubai'));
-test('The exact TILE map destination is retained',()=>expect(googleMapsUrl).toBe('https://share.google/lpX3rw7tnS8ZIkqQQ'));
+test('The map embed is pinned to TILE exact coordinates',()=>expect(googleMapsEmbedUrl).toContain('q=25.0630879,55.1415203'));
 test('Unwanted community events cannot be booked from the event list',()=>{
  expect(events.some(event=>event.name==='Missing Piece Meetups')).toBe(false);
  expect(events.some(event=>event.name==='Creative nights')).toBe(false);
