@@ -6,5 +6,6 @@ import { MenuSection } from '@/components/sections/MenuSection';
 import { EventsSection } from '@/components/sections/EventsSection';
 import { CoworkingSection } from '@/components/sections/CoworkingSection';
 import { Footer } from '@/components/sections/Footer';
-const Index = () => <><Navigation/><main><HeroSection/><SpaceSection/><GamesSection/><MenuSection/><EventsSection/><CoworkingSection/></main><Footer/></>;
+import { ScrollEffects } from '@/components/ScrollEffects';
+const Index = () => <><Navigation/><main><HeroSection/><SpaceSection/><GamesSection/><MenuSection/><EventsSection/><CoworkingSection/></main><Footer/><ScrollEffects/></>;
 export default Index;
