@@ -1,0 +1,10 @@
+import { test, expect } from 'bun:test';
+import { gamesPrice, gameCategories, tableBookingUrl, deskBookingUrl, eventBookingUrl, events } from './tile-content';
+import { hasPrice } from './menu-data';
+test('Unlimited gaming is AED 30 per person',()=>expect(gamesPrice).toBe(30));
+test('Strategy has the five specified games',()=>expect(gameCategories[0].games).toEqual(['Catan','Ticket to Ride','Splendor','Azul','Pandemic']));
+test('Table booking includes people and date placeholders',()=>expect(new URL(tableBookingUrl).searchParams.get('text')).toBe("Hi TILE, I'd like to book a table for [number] people on [date]"));
+test('Desk booking includes date placeholder',()=>expect(new URL(deskBookingUrl).searchParams.get('text')).toBe("Hi TILE, I'd like to work from TILE on [date]"));
+test('Event booking names the event',()=>expect(new URL(eventBookingUrl('Mahjong Majlis')).searchParams.get('text')).toBe("Hi TILE, I'd like to join Mahjong Majlis"));
+test('Community events lead with Mahjong Majlis and Play Days',()=>expect(events.slice(0,2).map(e=>e.name)).toEqual(['Mahjong Majlis','Play Days']));
+test('Empty price is hidden; numeric AED value is shown',()=>{expect(hasPrice(undefined)).toBe(false);expect(hasPrice(30)).toBe(true)});

@@ -1,124 +1,17 @@
-import { motion } from "framer-motion";
-import { ChevronDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import heroImage from "@/assets/hero-cafe.png";
-export const HeroSection = () => {
-  const scrollToAbout = () => {
-    const aboutSection = document.querySelector("#about");
-    if (aboutSection) {
-      aboutSection.scrollIntoView({
-        behavior: "smooth"
-      });
-    }
-  };
-  return <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image */}
-      <div className="absolute inset-0">
-        <motion.img 
-          initial={{ scale: 1 }} 
-          animate={{ scale: 1.15 }} 
-          transition={{
-            duration: 20,
-            ease: "linear",
-            repeat: Infinity,
-            repeatType: "reverse"
-          }} 
-          src={heroImage} 
-          alt="TILE Café Interior" 
-          className="w-full h-full object-cover" 
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-foreground/60 via-foreground/40 to-foreground/70" />
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 container mx-auto px-6 text-center">
-        <motion.div initial={{
-        opacity: 0,
-        y: 40
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} transition={{
-        duration: 1,
-        delay: 0.3
-      }} className="max-w-4xl mx-auto">
-          <motion.p initial={{
-          opacity: 0,
-          y: 20
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          duration: 0.8,
-          delay: 0.4
-        }} className="text-sm md:text-base text-primary-foreground/80 uppercase tracking-widest mb-4">
-            Dubai's Community Board Game Café
-          </motion.p>
-
-          <motion.h1 initial={{
-          opacity: 0,
-          y: 30
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          duration: 0.8,
-          delay: 0.5
-        }} className="font-display text-4xl md:text-6xl lg:text-7xl text-primary-foreground font-bold leading-tight mb-6">
-            The Missing Piece.
-          </motion.h1>
-
-          <motion.p initial={{
-          opacity: 0,
-          y: 20
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          duration: 0.8,
-          delay: 0.7
-        }} className="text-lg md:text-xl text-primary-foreground/90 mb-10 max-w-2xl mx-auto font-light">Board games, specialty coffee, and community - all under one roof.</motion.p>
-
-          <motion.div initial={{
-          opacity: 0,
-          y: 20
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          duration: 0.8,
-          delay: 0.9
-        }} className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="sage" size="xl" onClick={scrollToAbout}>
-              Explore TILE
-            </Button>
-            <Button variant="outline" size="xl" className="border-primary-foreground/50 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" onClick={() => document.querySelector("#menu")?.scrollIntoView({
-            behavior: "smooth"
-          })}>
-              View Menu
-            </Button>
-          </motion.div>
-        </motion.div>
-      </div>
-
-      {/* Scroll Indicator */}
-      <motion.div initial={{
-      opacity: 0
-    }} animate={{
-      opacity: 1
-    }} transition={{
-      delay: 1.5,
-      duration: 0.8
-    }} className="absolute bottom-8 left-1/2 -translate-x-1/2">
-        <motion.button onClick={scrollToAbout} animate={{
-        y: [0, 10, 0]
-      }} transition={{
-        duration: 2,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }} className="text-primary-foreground/80 hover:text-primary-foreground transition-colors" aria-label="Scroll to content">
-          <ChevronDown size={32} />
-        </motion.button>
-      </motion.div>
-    </section>;
-};
+import { ArrowUpRight, ArrowDown, Car, Clock, Dices } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TileGrid } from '@/components/TileGrid';
+import { tableBookingUrl } from '@/lib/tile-content';
+export const HeroSection = () => <section id="home" className="hero dark-section">
+ <div className="page-width hero-layout">
+  <div className="hero-copy">
+   <p className="hero-eyebrow"><span className="neon-square"/> Board games · Mahjong · Specialty coffee</p>
+   <h1>the missing<br/>piece<span className="text-primary">.</span></h1>
+   <p className="hero-subline">Unlimited board games, specialty coffee and a table with your name on it. Inside Grip Sports Club, JLT.</p>
+   <div className="hero-buttons"><Button asChild size="lg"><a href={tableBookingUrl} target="_blank" rel="noopener noreferrer">Book a table <ArrowUpRight/></a></Button><Button asChild variant="hero-outline" size="lg"><a href="#menu">See the menu <ArrowDown/></a></Button></div>
+   <div className="hero-facts"><span><Dices/> AED 30 unlimited games</span><span><Clock/> 8am to midnight daily</span><span><Car/> Free parking</span></div>
+  </div>
+  <TileGrid/>
+ </div>
+ <div className="hero-bottom page-width"><span>A place to belong. A reason to stay.</span><a href="#space" aria-label="Explore the space"><ArrowDown size={18}/></a></div>
+</section>;
