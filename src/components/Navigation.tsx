@@ -1,137 +1,27 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import tileLogo from "@/assets/tile-logo.png";
-
-const navLinks = [
-  { href: "#about", label: "About" },
-  { href: "#space", label: "Space" },
-  { href: "#games", label: "Games" },
-  { href: "#menu", label: "Menu" },
-  { href: "#events", label: "Events" },
-  { href: "#coworking", label: "Coworking" },
-];
-
+import { useEffect, useState } from 'react';
+import { Menu, X, ArrowUpRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BrandLogo } from '@/components/BrandLogo';
+import { tableBookingUrl } from '@/lib/tile-content';
+const links = ['Games', 'Menu', 'Events', 'Coworking'];
 export const Navigation = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
-    setIsMobileMenuOpen(false);
+ const [open,setOpen] = useState(false);
+ const [active,setActive] = useState('');
+ useEffect(() => {
+  const update = () => {
+   const current = links.map(label => document.getElementById(label.toLowerCase())).filter((el): el is HTMLElement => Boolean(el)).filter(el => el.getBoundingClientRect().top <= 160).at(-1);
+   setActive(current?.id || '');
   };
-
-  return (
-    <>
-      <motion.nav
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          isScrolled
-            ? "bg-background/95 backdrop-blur-lg shadow-soft py-3"
-            : "bg-foreground/20 backdrop-blur-sm py-6"
-        }`}
-      >
-        <div className="container mx-auto px-6 flex items-center justify-between">
-          <a
-            href="#"
-            className="flex items-center"
-          >
-            <img 
-              src={tileLogo} 
-              alt="TILE" 
-              className={`h-8 md:h-10 w-auto transition-all ${
-                isScrolled ? "" : "brightness-0 invert"
-              }`}
-            />
-          </a>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <button
-                key={link.href}
-                onClick={() => scrollToSection(link.href)}
-                className={`text-sm font-medium transition-colors duration-300 relative group ${
-                  isScrolled
-                    ? "text-foreground/80 hover:text-primary"
-                    : "text-primary-foreground/90 hover:text-primary-foreground"
-                }`}
-              >
-                {link.label}
-                <span className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${
-                  isScrolled ? "bg-primary" : "bg-primary-foreground"
-                }`} />
-              </button>
-            ))}
-            <Button
-              variant="sage"
-              size="sm"
-              onClick={() => scrollToSection("#visit")}
-            >
-              Visit Us
-            </Button>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={`md:hidden p-2 ${isScrolled ? "text-foreground" : "text-primary-foreground"}`}
-            aria-label="Toggle menu"
-          >
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-      </motion.nav>
-
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-40 bg-background pt-24 px-6 md:hidden"
-          >
-            <div className="flex flex-col gap-6">
-              {navLinks.map((link, index) => (
-                <motion.button
-                  key={link.href}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  onClick={() => scrollToSection(link.href)}
-                  className="text-2xl font-display text-foreground text-left py-2 border-b border-border"
-                >
-                  {link.label}
-                </motion.button>
-              ))}
-              <Button
-                variant="sage"
-                size="lg"
-                onClick={() => scrollToSection("#visit")}
-                className="mt-4"
-              >
-                Visit Us
-              </Button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
-  );
+  window.addEventListener('scroll',update,{passive:true}); update();
+  return () => window.removeEventListener('scroll',update);
+ },[]);
+ return <header className="site-nav dark-section">
+  <nav className="page-width nav-inner" aria-label="Main navigation">
+   <a href="#home" onClick={() => setOpen(false)}><BrandLogo /></a>
+   <div className="desktop-links">{links.map(label => <a key={label} href={`#${label.toLowerCase()}`} aria-current={active===label.toLowerCase()?'location':undefined}>{label}</a>)}</div>
+   <Button asChild className="nav-book"><a href={tableBookingUrl} target="_blank" rel="noopener noreferrer">Book a table <ArrowUpRight /></a></Button>
+   <Button variant="ghost" size="icon" className="mobile-toggle" aria-label={open?'Close menu':'Open menu'} aria-expanded={open} onClick={() => setOpen(!open)}>{open?<X/>:<Menu/>}</Button>
+  </nav>
+  {open && <div className="mobile-links">{links.map(label => <a key={label} href={`#${label.toLowerCase()}`} onClick={() => setOpen(false)}>{label}</a>)}<Button asChild><a href={tableBookingUrl} target="_blank" rel="noopener noreferrer">Book a table</a></Button></div>}
+ </header>;
 };
