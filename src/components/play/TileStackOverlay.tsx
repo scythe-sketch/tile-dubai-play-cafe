@@ -37,6 +37,19 @@ function Experience({ onClose }: { onClose: () => void }) {
     const timer = setInterval(() => setCountdown(client.formatCountdown(client.nextResetAt())), 1000);
     return () => { mounted.current = false; requestId.current++; clearInterval(timer); audio.current?.destroy(); query.removeEventListener('change', update); document.body.style.overflow = old; document.body.style.paddingRight = oldPad; focus?.focus(); };
   }, []);
+  /** the drop key has to work even after focus drifts off the panel to the page body */
+  const dropRef = useRef(drop);
+  dropRef.current = drop;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { rulesOpen ? setRulesOpen(false) : onClose(); return; }
+      const target = e.target as HTMLElement | null;
+      if (screen === 'playing' && !rulesOpen && (e.key === ' ' || e.key === 'Enter') && !e.repeat && !target?.closest('button,input')) { e.preventDefault(); dropRef.current(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [screen, rulesOpen, onClose]);
+  useEffect(() => { panel.current?.focus(); }, [screen]);
   useEffect(() => {
     if (screen !== 'board') return;
     let live = true;
