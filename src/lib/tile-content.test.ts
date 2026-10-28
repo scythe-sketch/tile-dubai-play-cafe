@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test';
-import { gamesPrice, gameCategories, tableBookingUrl, deskBookingUrl, eventBookingUrl, events, address, googleMapsUrl, googleMapsEmbedUrl, termsNote } from './tile-content';
+import { gamesPrice, gameCategories, tableBookingUrl, deskBookingUrl, eventBookingUrl, events, address, googleMapsUrl, googleMapsEmbedUrl, termsNote, prizeTerms } from './tile-content';
 import { hasPrice } from './menu-data';
 test('Unlimited gaming is AED 30 per person',()=>expect(gamesPrice).toBe(30));
 test('Strategy has the five specified games',()=>expect(gameCategories[0].games).toEqual(['Catan','Ticket to Ride','Splendor','Azul','Pandemic']));
