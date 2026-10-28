@@ -71,16 +71,16 @@ export const PlaySection = () => {
             win it<span className="text-primary">.</span>
           </h2>
           <p className="play-subline">
-            top of the leaderboard every week wins {PRIZE.passes} unlimited game passes at TILE.
+            top of the leaderboard every week wins {PRIZE.drinks} free drinks at tile.
           </p>
           <div className="play-prize">
             <Trophy />
             <div>
               <h3>
-                this week's prize: {PRIZE.passes} unlimited game passes<span className="price-mark">*</span>
+                this week's prize: {PRIZE.drinks} free drinks<span className="price-mark">*</span>
               </h3>
               <p>
-                worth aed {PRIZE.value}<span className="price-mark">*</span> · top score by sunday midnight wins.
+                top score by sunday midnight wins<span className="price-mark">*</span>
               </p>
             </div>
           </div>
