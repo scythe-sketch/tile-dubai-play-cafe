@@ -200,3 +200,22 @@ export function formatCountdown(target: Date, now: Date = new Date()) {
   if (hours > 0) return `${hours}h ${minutes}m`;
   return `${minutes}m`;
 }
+
+const NICK_KEY = 'tile.stack.nickname';
+
+/** remembered so the leaderboard can highlight "you." */
+export function myNickname(): string | null {
+  try {
+    return window.localStorage.getItem(NICK_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setMyNickname(nickname: string) {
+  try {
+    window.localStorage.setItem(NICK_KEY, nickname);
+  } catch {
+    /* ignore */
+  }
+}
