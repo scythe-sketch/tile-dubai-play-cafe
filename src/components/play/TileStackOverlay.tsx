@@ -15,7 +15,7 @@ const rules = [
 ];
 const registerMessages: Record<string, string> = {
   nickname_taken: 'that nickname is taken. try another one.',
-  invalid_nickname: 'nickname needs 3–16 letters, numbers, spaces or _.',
+  invalid_nickname: 'that name isn’t allowed — please change your name.',
   invalid_contact: 'enter your instagram @handle.',
   rate_limited: 'too many sign-ups from this connection today. try again later.',
 };
