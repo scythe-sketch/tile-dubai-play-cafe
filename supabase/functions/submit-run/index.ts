@@ -13,7 +13,8 @@ serve(async (_req, body) => {
   const { data: run, error } = await client.from('runs').select('player_id,seed,status,started_at').eq('id', body.runId).maybeSingle();
   if (error) throw error;
   if (!run) return fail('unknown_run');
-  if (run.player_id !== owner.id) return fail('wrong_player');
+  // an unclaimed run (played before sign-up) is claimed by this player in finalize_run
+  if (run.player_id !== null && run.player_id !== owner.id) return fail('wrong_player');
   if (run.status !== 'started') return fail('already_submitted');
   const seed = Number(run.seed);
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error('invalid seed');
@@ -29,5 +30,5 @@ serve(async (_req, body) => {
   });
   if (finalizeError) throw finalizeError;
   if (!data?.ok) return fail(typeof data?.reason === 'string' ? data.reason : 'rejected');
-  return json({ ok: true, score: data.score, rank: data.rank, isFirst: data.is_first, newBest: data.new_best });
+  return json({ ok: true, score: data.score, best: data.best, rank: data.rank, isFirst: data.is_first, newBest: data.new_best });
 });
