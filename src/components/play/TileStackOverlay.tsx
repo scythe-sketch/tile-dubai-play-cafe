@@ -71,19 +71,20 @@ function Experience({ onClose }: { onClose: () => void }) {
     audio.current?.numberOne(); const timer = setTimeout(() => setScreen('board'), reduced.current ? 700 : 2400); return () => clearTimeout(timer);
   }, [screen]);
   async function submit() {
-    if (!run.current) return;
+    const pending = client.pendingRun();
+    if (!pending) return;
     setBusy(true); setSaving(true); setMessage('');
     try {
-      const result = await client.submitRun(run.current, ticks.current);
+      const result = await client.submitRun(pending.runId, pending.tapTicks);
       if (!mounted.current) return;
       if (!result.ok) {
-        if (result.reason === 'already_submitted') { run.current = null; return; }
+        if (result.reason === 'already_submitted') { client.clearPendingRun(); run.current = null; return; }
         if (result.reason === 'not_registered') { setRegistered(false); setNick(null); setBest(0); return; }
         setMessage(result.reason === 'network' ? 'connection dropped. tap retry to save your score.' : 'this score could not be saved.');
-        if (result.reason !== 'network') run.current = null;
+        if (result.reason !== 'network') { client.clearPendingRun(); run.current = null; }
         return;
       }
-      run.current = null;
+      client.clearPendingRun(); run.current = null;
       const best = result.best ?? result.score ?? 0;
       setOwn({ rank: result.rank ?? 0, best }); setNewBest(Boolean(result.newBest)); setBest(b => Math.max(b, best)); client.saveLocalBest(best);
       if (result.isFirst && result.newBest) setScreen('winner');
@@ -137,7 +138,9 @@ function Experience({ onClose }: { onClose: () => void }) {
           overAge += dt;
           if (overAge >= (reduced.current ? 0 : 650) && !completed.current) {
             completed.current = true; setScore(s.score); const oldBest = client.localBest(); setNewBest(s.score > oldBest); client.saveLocalBest(s.score); setBest(Math.max(oldBest, s.score)); setScreen('over');
-            if (run.current && s.score > 0 && client.isRegistered()) void submit(); else if (s.score === 0) run.current = null;
+            if (run.current && s.score > 0) client.keepPendingRun({ runId: run.current, tapTicks: [...ticks.current], score: s.score });
+            if (s.score === 0) run.current = null;
+            if (client.pendingRun() && client.isRegistered()) void submit();
           }
         }
       }
@@ -210,8 +213,8 @@ function Experience({ onClose }: { onClose: () => void }) {
         {saving && <p className="ts-muted">saving your score…</p>}
         {own && (newBest ? <><span className="ts-badge">new best!</span><p className="ts-placement">you're <b>#{own.rank}</b> on this week's leaderboard</p></> : <p className="ts-placement">your best this week: <b>{own.best}</b> · you're <b>#{own.rank}</b></p>)}
         {!own && !saving && best > 0 && <p className="ts-muted">your best: {best}</p>}
-        {!registered && run.current && score > 0 && <form className="ts-form" onSubmit={e => void claim(e)}><h3>put your score on the leaderboard</h3><label>nickname<input name="nickname" required minLength={3} maxLength={16} pattern="[a-zA-Z0-9_ ]{3,16}" autoComplete="nickname" autoCapitalize="none"/></label><label>instagram<input name="contact" required maxLength={60} placeholder="@yourhandle" autoComplete="off" autoCapitalize="none"/></label><label className="ts-checkbox"><input type="checkbox" required/>i agree to the prize rules</label><button type="button" className="ts-terms" onClick={() => setRulesOpen(true)}>read prize rules</button><button className="ts-primary" disabled={busy}>{busy ? 'saving…' : 'save my score'}</button></form>}
-        {registered && run.current && !saving && score > 0 && <button disabled={busy} onClick={() => void submit()}>retry saving score</button>}
+        {!registered && client.pendingRun() && <form className="ts-form" onSubmit={e => void claim(e)}><h3>put your best score ({client.pendingRun()?.score}) on the leaderboard</h3><label>nickname<input name="nickname" required minLength={3} maxLength={16} pattern="[a-zA-Z0-9_ ]{3,16}" autoComplete="nickname" autoCapitalize="none"/></label><label>instagram<input name="contact" required maxLength={60} placeholder="@yourhandle" autoComplete="off" autoCapitalize="none"/></label><label className="ts-checkbox"><input type="checkbox" required/>i agree to the prize rules</label><button type="button" className="ts-terms" onClick={() => setRulesOpen(true)}>read prize rules</button><button className="ts-primary" disabled={busy}>{busy ? 'saving…' : 'save my score'}</button></form>}
+        {registered && client.pendingRun() && !saving && !busy && <button disabled={busy} onClick={() => void submit()}>retry saving score</button>}
         <button className="ts-share" onClick={() => void share()}><Share2 size={17}/>{copied ? 'copied!' : 'share your score'}</button>
         <button className="ts-primary" disabled={busy} onClick={() => void begin()}>play again</button>
         <button onClick={() => setScreen('board')}>leaderboard</button></section>}
