@@ -17,9 +17,9 @@ type Screen = 'start' | 'playing' | 'over' | 'board' | 'winner';
 export const TileStackOverlay = ({ open, onClose }: { open: boolean; onClose: () => void }) => open ? <Experience onClose={onClose} /> : null;
 export default TileStackOverlay;
 function Experience({ onClose }: { onClose: () => void }) {
-  const [screen, setScreen] = useState<Screen>('start'), [music, setMusic] = useState(client.musicOn), [rulesOpen, setRulesOpen] = useState(false);
-  const [best, setBest] = useState(client.localBest), [newBest, setNewBest] = useState(false), [score, setScore] = useState(0), [paused, setPaused] = useState(false);
-  const [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [registered, setRegistered] = useState(client.isRegistered);
+  const [screen, setScreen] = useState<Screen>('start'), [music, setMusic] = useState(client.musicOn()), [rulesOpen, setRulesOpen] = useState(false);
+  const [best, setBest] = useState(client.localBest()), [newBest, setNewBest] = useState(false), [score, setScore] = useState(0), [paused, setPaused] = useState(false);
+  const [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [registered, setRegistered] = useState(client.isRegistered());
   const [board, setBoard] = useState<client.Leaderboard | null>(null), [lastWeek, setLastWeek] = useState(false), [own, setOwn] = useState<{ rank: number; score: number } | null>(null);
   const [countdown, setCountdown] = useState(() => client.formatCountdown(client.nextResetAt()));
   const canvas = useRef<HTMLCanvasElement>(null), panel = useRef<HTMLDivElement>(null), sim = useRef<Sim | null>(null), audio = useRef<ReturnType<typeof createAudio> | null>(null);
