@@ -55,7 +55,7 @@ serve(async (_req, body) => {
   const params = generateTileParams(seed, nextTaps.length + 2);
   const result = replay(params, nextTaps);
   const update: Record<string, unknown> = {
-    tap_ticks: nextTaps, tap_ms: [...tapMs, now], ...paceCols,
+    tap_ticks: nextTaps, tap_count: nextTaps.length, tap_ms: [...tapMs, now], ...paceCols,
   };
   if (result.over) Object.assign(update, {
     status: 'complete', score: result.score, total_ticks: result.totalTicks, perfects: result.perfects,
@@ -64,7 +64,7 @@ serve(async (_req, body) => {
   });
   // optimistic lock: only one tap can extend a given tap list
   const { data: saved, error: saveError } = await client.from('runs').update(update)
-    .eq('id', run.id).eq('status', 'started').eq('tap_ticks', `{${taps.join(',')}}`).select('id');
+    .eq('id', run.id).eq('status', 'started').eq('tap_count', taps.length).select('id');
   if (saveError) throw saveError;
   if (!saved?.length) return fail('busy');
   return respond(client, run.id, seed, nextTaps, owner?.id ?? run.player_id, result.over ? 'complete' : 'started');

@@ -64,6 +64,7 @@ export type Database = {
           started_at: string
           status: string
           submitted_at: string | null
+          tap_count: number
           tap_deviation: number
           tap_ms: number[]
           tap_ticks: number[]
@@ -89,6 +90,7 @@ export type Database = {
           started_at?: string
           status?: string
           submitted_at?: string | null
+          tap_count?: number
           tap_deviation?: number
           tap_ms?: number[]
           tap_ticks?: number[]
@@ -114,6 +116,7 @@ export type Database = {
           started_at?: string
           status?: string
           submitted_at?: string | null
+          tap_count?: number
           tap_deviation?: number
           tap_ms?: number[]
           tap_ticks?: number[]
