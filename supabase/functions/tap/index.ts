@@ -1,12 +1,9 @@
 import { db, fail, json, player, serve } from '../_shared/common.ts';
-import { generateTileParams, MIN_TAP_GAP, MAX_TAPS, needsReview, replay, tapDeviation, TICKS_PER_SECOND } from '../_shared/tileStackSim.ts';
+import { applyPace, generateTileParams, needsReview, replay, tapDeviation, TICKS_PER_SECOND } from '../_shared/tileStackSim.ts';
 
 // Every tap is sent live. The server keeps its own copy of the run, checks that
 // taps never arrive faster than real time, and reveals one more tile per tap.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const EARLY_SLACK_MS = 1500;
-const MAX_PAUSES = 3;
-const MAX_PAUSED_MS = 5 * 60 * 1000;
 const MAX_TICK = 45 * 60 * TICKS_PER_SECOND;
 
 serve(async (_req, body) => {
@@ -40,37 +37,25 @@ serve(async (_req, body) => {
 
   if (tapMs.filter(ms => now - ms < 1000).length >= 20) return fail('rate_limited');
 
-  let pausedMs = Number(run.paused_ms ?? 0), pauseCount = run.pause_count ?? 0;
-  let pausedAt = run.paused_at_ms === null ? null : Number(run.paused_at_ms);
-  if (event === 'pause') {
-    if (pausedAt !== null) return json({ ok: true });
-    if (pauseCount >= MAX_PAUSES) return reject('too_many_pauses');
-    await client.from('runs').update({ paused_at_ms: now }).eq('id', run.id).eq('status', 'started');
+  const pace = applyPace({
+    serverStartMs: run.server_start_ms === null ? null : Number(run.server_start_ms),
+    pausedMs: Number(run.paused_ms ?? 0), pauseCount: run.pause_count ?? 0,
+    pausedAtMs: run.paused_at_ms === null ? null : Number(run.paused_at_ms),
+    lastTick: taps.length ? taps[taps.length - 1] : -Infinity, tapCount: taps.length,
+  }, event, t, now);
+  if (!pace.ok) return reject(pace.reason);
+  const p = pace.state;
+  const paceCols = { server_start_ms: p.serverStartMs, paused_ms: p.pausedMs, pause_count: p.pauseCount, paused_at_ms: p.pausedAtMs };
+  if (event !== 'tap') {
+    await client.from('runs').update(paceCols).eq('id', run.id).eq('status', 'started');
     return json({ ok: true });
   }
-  if (pausedAt !== null) {
-    pausedMs += now - pausedAt; pauseCount += 1; pausedAt = null;
-    if (pausedMs > MAX_PAUSED_MS) return reject('paused_too_long');
-  }
-  if (event === 'resume') {
-    await client.from('runs').update({ paused_at_ms: null, paused_ms: pausedMs, pause_count: pauseCount }).eq('id', run.id).eq('status', 'started');
-    return json({ ok: true });
-  }
-
-  // tap: order, spacing and real-time pace
-  const last = taps.length ? taps[taps.length - 1] : -Infinity;
-  if (t < last || t - last < MIN_TAP_GAP || taps.length >= MAX_TAPS) return reject('bad_tick');
-  const tickMs = (t * 1000) / TICKS_PER_SECOND;
-  let serverStart = run.server_start_ms === null ? null : Number(run.server_start_ms);
-  if (serverStart === null) serverStart = Math.round(now - tickMs);
-  else if (now < serverStart + tickMs + pausedMs - EARLY_SLACK_MS) return reject('too_fast');
 
   const nextTaps = [...taps, t];
   const params = generateTileParams(seed, nextTaps.length + 2);
   const result = replay(params, nextTaps);
   const update: Record<string, unknown> = {
-    tap_ticks: nextTaps, tap_ms: [...tapMs, now], server_start_ms: serverStart,
-    paused_ms: pausedMs, pause_count: pauseCount, paused_at_ms: null,
+    tap_ticks: nextTaps, tap_ms: [...tapMs, now], ...paceCols,
   };
   if (result.over) Object.assign(update, {
     status: 'complete', score: result.score, total_ticks: result.totalTicks, perfects: result.perfects,

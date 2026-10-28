@@ -302,3 +302,43 @@ export function needsReview(result: ReplayResult, tapTicks: number[]): boolean {
   if (tapTicks.length >= 15 && tapDeviation(tapTicks) < 3) return true;
   return false;
 }
+
+export const EARLY_SLACK_MS = 1500;
+export const MAX_PAUSES = 3;
+export const MAX_PAUSED_MS = 5 * 60 * 1000;
+
+/** what the server tracks to check a run is played in real time. */
+export type PaceState = { serverStartMs: number | null; pausedMs: number; pauseCount: number; pausedAtMs: number | null; lastTick: number; tapCount: number };
+export type PaceEvent = 'tap' | 'pause' | 'resume';
+
+export function newPace(): PaceState {
+  return { serverStartMs: null, pausedMs: 0, pauseCount: 0, pausedAtMs: null, lastTick: -Infinity, tapCount: 0 };
+}
+
+/**
+ * apply one live event as it reaches the server. taps may arrive late (network,
+ * pauses) but never more than EARLY_SLACK_MS earlier than real time allows.
+ */
+export function applyPace(state: PaceState, event: PaceEvent, tick: number, nowMs: number): { ok: true; state: PaceState } | { ok: false; reason: string } {
+  const next = { ...state };
+  if (event === 'pause') {
+    if (next.pausedAtMs !== null) return { ok: true, state: next };
+    if (next.pauseCount >= MAX_PAUSES) return { ok: false, reason: 'too_many_pauses' };
+    next.pausedAtMs = nowMs;
+    return { ok: true, state: next };
+  }
+  if (next.pausedAtMs !== null) {
+    next.pausedMs += Math.max(0, nowMs - next.pausedAtMs);
+    next.pauseCount += 1;
+    next.pausedAtMs = null;
+    if (next.pausedMs > MAX_PAUSED_MS) return { ok: false, reason: 'paused_too_long' };
+  }
+  if (event === 'resume') return { ok: true, state: next };
+  if (!Number.isInteger(tick) || tick < 0 || tick - next.lastTick < MIN_TAP_GAP || next.tapCount >= MAX_TAPS) return { ok: false, reason: 'bad_tick' };
+  const tickMs = (tick * 1000) / TICKS_PER_SECOND;
+  if (next.serverStartMs === null) next.serverStartMs = Math.round(nowMs - tickMs);
+  else if (nowMs < next.serverStartMs + tickMs + next.pausedMs - EARLY_SLACK_MS) return { ok: false, reason: 'too_fast' };
+  next.lastTick = tick;
+  next.tapCount += 1;
+  return { ok: true, state: next };
+}
