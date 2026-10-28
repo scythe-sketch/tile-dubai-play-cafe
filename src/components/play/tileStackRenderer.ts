@@ -15,7 +15,7 @@ export function createRenderer(canvas: HTMLCanvasElement) {
   const observer = new ResizeObserver(resize); observer.observe(canvas); resize();
   function draw(f: Frame) {
     if (!ctx || !w || !h) return;
-    const c = ctx, scale = w / 1000, step = 65, base = h / scale - 150;
+    const c = ctx, scale = w / 1000, step = 65, base = h / scale - 200;
     c.clearRect(0, 0, w, h); c.fillStyle = colors[0]; c.fillRect(0, 0, w, h);
     c.save(); c.scale(scale, scale);
     c.strokeStyle = colors[1]; c.lineWidth = 1;
@@ -48,8 +48,8 @@ export function createRenderer(canvas: HTMLCanvasElement) {
       }
       if (f.flash > 0) { c.globalAlpha = f.flash * .45; c.strokeStyle = colors[1]; c.lineWidth = 5; c.beginPath(); c.ellipse(f.sim.stack[f.sim.stack.length - 1].center / U, base - f.sim.score * step + 28, (1 - f.flash) * 220 + 50, (1 - f.flash) * 90 + 30, 0, 0, Math.PI * 2); c.stroke(); c.globalAlpha = 1; }
     }
-    c.restore(); c.fillStyle = colors[2]; c.textAlign = 'center'; c.font = '800 68px "League Spartan", sans-serif'; c.fillText(String(f.sim.score), w / 2, 112);
-    if (f.sim.combo > 1) { c.fillStyle = colors[1]; c.font = '14px "Public Sans", sans-serif'; c.fillText(`perfect × ${f.sim.combo}`, w / 2, 137); }
+    c.restore(); c.fillStyle = colors[2]; c.textAlign = 'center'; c.font = '800 68px "League Spartan", sans-serif'; c.fillText(String(f.sim.score), w / 2, 150);
+    if (f.sim.combo > 1) { c.fillStyle = colors[1]; c.font = '14px "Public Sans", sans-serif'; c.fillText(`perfect × ${f.sim.combo}`, w / 2, 175); }
   }
   return { draw, resize, destroy() { observer.disconnect(); } };
 }
