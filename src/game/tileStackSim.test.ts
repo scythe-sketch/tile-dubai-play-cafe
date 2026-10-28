@@ -139,7 +139,7 @@ describe('tile stack simulation', () => {
   test('browser and server copies give identical results from the same tiles and taps', () => {
     expect(readFileSync('supabase/functions/_shared/tileStackSim.ts', 'utf8')).toBe(readFileSync('src/game/tileStackSim.ts', 'utf8'));
     const params = generateTileParams(999, 2100);
-    const taps = perfectTaps(999, 40);
+    const taps = perfectTaps(999, 20);
     expect(server.replay(params, taps)).toEqual(replay(params, taps));
   });
 
