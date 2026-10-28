@@ -80,5 +80,5 @@ async function respond(client: ReturnType<typeof db>, runId: string, seed: numbe
     if (error) throw error;
     if (data?.ok) return json({ ok: true, over: true, saved: true, score: data.score, best: data.best, rank: data.rank, isFirst: data.is_first, newBest: data.new_best, pending: data.pending });
   }
-  return json({ ok: true, over: true, score: result.score, saved: status === 'valid' });
+  return json({ ok: true, over: true, score: result.score, saved: false });
 }
