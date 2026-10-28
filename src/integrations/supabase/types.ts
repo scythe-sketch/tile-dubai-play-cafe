@@ -51,7 +51,7 @@ export type Database = {
           max_combo: number
           needs_review: boolean
           perfects: number
-          player_id: string
+          player_id: string | null
           reject_reason: string | null
           score: number
           seed: number
@@ -68,7 +68,7 @@ export type Database = {
           max_combo?: number
           needs_review?: boolean
           perfects?: number
-          player_id: string
+          player_id?: string | null
           reject_reason?: string | null
           score?: number
           seed: number
@@ -85,7 +85,7 @@ export type Database = {
           max_combo?: number
           needs_review?: boolean
           perfects?: number
-          player_id?: string
+          player_id?: string | null
           reject_reason?: string | null
           score?: number
           seed?: number

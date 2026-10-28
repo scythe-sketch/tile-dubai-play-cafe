@@ -5,8 +5,11 @@ serve(async (req, body) => {
   const nickname = body.nickname.trim();
   if (!/^[a-zA-Z0-9_ ]{3,16}$/.test(nickname) || isProfane(nickname)) return fail('invalid_nickname', 400);
   const rawContact = body.contact.trim();
-  const phone = rawContact.replace(/[ -]/g, '');
-  const contact = /^\+971\d{9}$/.test(phone) ? phone : rawContact;
+  // accept 05x / 9715x / +9715x phones and instagram handles with or without @
+  const digits = rawContact.replace(/[\s()-]/g, '');
+  const phone = /^0\d{9}$/.test(digits) ? '+971' + digits.slice(1) : /^971\d{9}$/.test(digits) ? '+' + digits : /^00971\d{9}$/.test(digits) ? '+' + digits.slice(2) : digits;
+  const handle = rawContact.replace(/^(?:https?:\/\/)?(?:www\.)?instagram\.com\//i, '').replace(/\/+$/, '');
+  const contact = /^\+971\d{9}$/.test(phone) ? phone : handle.startsWith('@') ? handle : '@' + handle;
   if (!/^\+971\d{9}$/.test(contact) && !/^@[a-zA-Z0-9_.]{2,30}$/.test(contact)) return fail('invalid_contact', 400);
   const client = db();
   const ip_hash = await ipHash(req);

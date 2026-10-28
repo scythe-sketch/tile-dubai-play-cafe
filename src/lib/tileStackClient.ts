@@ -77,7 +77,16 @@ export async function registerPlayer(nickname: string, contact: string): Promise
   const { data, error } = await supabase.functions.invoke('register-player', {
     body: { nickname, contact },
   });
-  if (error || !data) return { ok: false, reason: 'network' };
+  if (error || !data) {
+    /* validation failures come back as 400 with a reason in the body */
+    try {
+      const body = await (error as { context?: Response })?.context?.json();
+      if (body?.reason) return { ok: false, reason: String(body.reason) };
+    } catch {
+      /* fall through */
+    }
+    return { ok: false, reason: 'network' };
+  }
   if (!data.ok || !data.token) return { ok: false, reason: data.reason ?? 'rejected' };
   setDeviceToken(data.token);
   return { ok: true, token: data.token };
@@ -85,10 +94,10 @@ export async function registerPlayer(nickname: string, contact: string): Promise
 
 export type StartResult = { ok: boolean; runId?: string; seed?: number; reason?: string };
 
+/** every round is a real round: before sign-up the run is unclaimed and gets claimed on save. */
 export async function startRun(): Promise<StartResult> {
   const token = getDeviceToken();
-  if (!token) return { ok: false, reason: 'not_registered' };
-  const { data, error } = await supabase.functions.invoke('start-run', { body: { token } });
+  const { data, error } = await supabase.functions.invoke('start-run', { body: token ? { token } : {} });
   if (error || !data) return { ok: false, reason: 'network' };
   if (!data.ok) return { ok: false, reason: data.reason ?? 'rejected' };
   return { ok: true, runId: data.runId, seed: Number(data.seed) };
@@ -97,6 +106,8 @@ export async function startRun(): Promise<StartResult> {
 export type SubmitResult = {
   ok: boolean;
   score?: number;
+  /** the player's best this week, which is what the rank refers to */
+  best?: number;
   rank?: number;
   isFirst?: boolean;
   newBest?: boolean;
@@ -114,6 +125,7 @@ export async function submitRun(runId: string, tapTicks: number[]): Promise<Subm
   return {
     ok: true,
     score: Number(data.score),
+    best: Number(data.best ?? data.score),
     rank: Number(data.rank),
     isFirst: Boolean(data.isFirst),
     newBest: Boolean(data.newBest),
@@ -187,4 +199,23 @@ export function formatCountdown(target: Date, now: Date = new Date()) {
   if (days > 0) return `${days}d ${hours}h ${minutes}m`;
   if (hours > 0) return `${hours}h ${minutes}m`;
   return `${minutes}m`;
+}
+
+const NICK_KEY = 'tile.stack.nickname';
+
+/** remembered so the leaderboard can highlight "you." */
+export function myNickname(): string | null {
+  try {
+    return window.localStorage.getItem(NICK_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setMyNickname(nickname: string) {
+  try {
+    window.localStorage.setItem(NICK_KEY, nickname);
+  } catch {
+    /* ignore */
+  }
 }

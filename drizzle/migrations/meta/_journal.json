@@ -15,6 +15,13 @@
       "when": 1793154095103,
       "tag": "0001_finalize_run_strict_new_best",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793156295287,
+      "tag": "0002_anonymous_runs_claimed_on_signup",
+      "breakpoints": true
     }
   ]
 }
