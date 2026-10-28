@@ -36,6 +36,13 @@
       "when": 1793203898128,
       "tag": "0004_live_taps_and_review",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793203971391,
+      "tag": "0005_finalize_reads_run_flag",
+      "breakpoints": true
     }
   ]
 }
