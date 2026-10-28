@@ -109,7 +109,6 @@ export const PlaySection = () => {
               {ready ? 'no scores yet this week. be the first.' : 'loading this week’s board…'}
             </p>
           )}
-          <p className="play-fineprint">scores are replayed on our server, never taken from your device.</p>
         </div>
       </div>
       {open ? (
