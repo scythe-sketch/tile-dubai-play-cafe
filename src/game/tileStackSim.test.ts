@@ -12,15 +12,15 @@ import {
   type Sim,
 } from './tileStackSim';
 
-/** walk the sliding tile to the tick where it sits closest to `target`. */
+/** walk the sliding tile until it first sits within a perfect window of `target`. */
 function stepNear(sim: Sim, target: number, maxTicks = 400_000) {
-  let best = Math.abs(sim.current.center - target);
   let guard = 0;
-  while (guard++ < maxTicks && !sim.over) {
+  while (
+    guard++ < maxTicks &&
+    !sim.over &&
+    Math.abs(sim.current.center - target) > PERFECT_TOLERANCE
+  ) {
     advance(sim, 1);
-    const now = Math.abs(sim.current.center - target);
-    if (now > best) return;
-    best = now;
   }
 }
 
