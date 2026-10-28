@@ -77,6 +77,7 @@ function Experience({ onClose }: { onClose: () => void }) {
       if (!mounted.current) return;
       if (!result.ok) {
         if (result.reason === 'already_submitted') { run.current = null; return; }
+        if (result.reason === 'not_registered') { setRegistered(false); setNick(null); setBest(0); return; }
         setMessage(result.reason === 'network' ? 'connection dropped. tap retry to save your score.' : 'this score could not be saved.');
         if (result.reason !== 'network') run.current = null;
         return;
@@ -96,12 +97,13 @@ function Experience({ onClose }: { onClose: () => void }) {
     catch { result = { ok: false, reason: 'network' }; }
     if (!mounted.current || id !== requestId.current) return;
     setOwn(null); setCopied(false);
+    if (!client.isRegistered()) { setRegistered(false); setNick(null); setBest(client.localBest()); }
     const verified = result.ok && result.runId && Number.isFinite(result.seed);
     run.current = verified ? result.runId! : null;
     sim.current = createSim(verified ? result.seed! : (globalThis.crypto?.getRandomValues(new Uint32Array(1))[0] ?? Date.now()) >>> 0);
     ticks.current = []; completed.current = false; effects.current = { slices: [], flash: 0, milestone: null }; pausedRef.current = false;
     setPaused(false); setNewBest(false); setScore(0); setBusy(false); setScreen('playing');
-    if (!verified) setMessage(result.reason === 'rate_limited' ? 'slow down a little — this round won’t be saved.' : 'offline — this round won’t be saved to the leaderboard.');
+    if (!verified) setMessage(result.reason === 'rate_limited' ? 'slow down a little — this round won’t be saved.' : 'connection is slow — this round may not be saved.');
   }
   function drop() {
     if (screen !== 'playing' || rulesOpen || completed.current || !sim.current) return;

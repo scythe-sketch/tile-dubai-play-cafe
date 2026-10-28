@@ -18,6 +18,27 @@ export const PRIZE = {
   terms: '*terms & conditions apply',
 };
 
+/** bump this to wipe every device's saved sign-up and best score (e.g. after a leaderboard reset). */
+const RESET_KEY = 'tile.stack.reset';
+const RESET_VERSION = '2026-10-28';
+
+export function forgetPlayer() {
+  try {
+    for (const key of [TOKEN_KEY, LOCAL_BEST_KEY, 'tile.stack.nickname']) window.localStorage.removeItem(key);
+  } catch {
+    /* ignore */
+  }
+}
+
+try {
+  if (window.localStorage.getItem(RESET_KEY) !== RESET_VERSION) {
+    forgetPlayer();
+    window.localStorage.setItem(RESET_KEY, RESET_VERSION);
+  }
+} catch {
+  /* ignore */
+}
+
 export function getDeviceToken(): string | null {
   try {
     return window.localStorage.getItem(TOKEN_KEY);
@@ -96,7 +117,14 @@ export type StartResult = { ok: boolean; runId?: string; seed?: number; reason?:
 export async function startRun(): Promise<StartResult> {
   const token = getDeviceToken();
   const { data, error } = await supabase.functions.invoke('start-run', { body: token ? { token } : {} });
-  if (error || !data) return { ok: false, reason: 'network' };
+  if (error || !data) {
+    /* a sign-up the server no longer knows (e.g. after a reset): forget it and play as a new player */
+    let reason = '';
+    try { reason = (await (error as { context?: Response })?.context?.json())?.reason ?? ''; } catch { /* ignore */ }
+    if (token && reason === 'not_registered') { forgetPlayer(); return startRun(); }
+    return { ok: false, reason: 'network' };
+  }
+  if (token && data.reason === 'not_registered') { forgetPlayer(); return startRun(); }
   if (!data.ok) return { ok: false, reason: data.reason ?? 'rejected' };
   return { ok: true, runId: data.runId, seed: Number(data.seed) };
 }
@@ -119,7 +147,10 @@ export async function submitRun(runId: string, tapTicks: number[]): Promise<Subm
     body: { token, runId, tapTicks },
   });
   if (error || !data) return { ok: false, reason: 'network' };
-  if (!data.ok) return { ok: false, reason: data.reason ?? 'rejected' };
+  if (!data.ok) {
+    if (data.reason === 'not_registered') forgetPlayer();
+    return { ok: false, reason: data.reason ?? 'rejected' };
+  }
   return {
     ok: true,
     score: Number(data.score),
