@@ -77,7 +77,16 @@ export async function registerPlayer(nickname: string, contact: string): Promise
   const { data, error } = await supabase.functions.invoke('register-player', {
     body: { nickname, contact },
   });
-  if (error || !data) return { ok: false, reason: 'network' };
+  if (error || !data) {
+    /* validation failures come back as 400 with a reason in the body */
+    try {
+      const body = await (error as { context?: Response })?.context?.json();
+      if (body?.reason) return { ok: false, reason: String(body.reason) };
+    } catch {
+      /* fall through */
+    }
+    return { ok: false, reason: 'network' };
+  }
   if (!data.ok || !data.token) return { ok: false, reason: data.reason ?? 'rejected' };
   setDeviceToken(data.token);
   return { ok: true, token: data.token };
