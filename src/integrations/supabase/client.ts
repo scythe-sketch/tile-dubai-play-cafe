@@ -12,7 +12,7 @@ function isNewSupabaseApiKey(value: string): boolean {
 }
 
 function createSupabaseFetch(supabaseKey: string): typeof fetch {
-  return (input, init) => {
+  const supabaseFetch = ((input, init) => {
     const headers = new Headers(
       typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined,
     );
@@ -28,7 +28,14 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
     headers.set('apikey', supabaseKey);
     return fetch(input, { ...init, headers });
-  };
+  }) as unknown as typeof fetch;
+
+  // `fetch` gained `preconnect` in newer DOM typings; keep this wrapper compatible with it.
+  if (typeof fetch.preconnect === 'function') {
+    supabaseFetch.preconnect = (input, options) => fetch.preconnect(input, options);
+  }
+
+  return supabaseFetch;
 }
 
 // Import the supabase client like this:
