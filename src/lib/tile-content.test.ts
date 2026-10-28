@@ -18,6 +18,6 @@ test('Unwanted community events cannot be booked from the event list',()=>{
 
 test("price terms", () => {
   expect(termsNote).toBe("*terms & conditions apply");
-  expect(prizeTerms).toContain("redeemed in person at TILE within 30 days");
+  expect(prizeTerms).toContain("drinks are redeemed in person at tile within 30 days");
   expect(prizeTerms).toContain("one prize per person every 4 weeks");
 });
