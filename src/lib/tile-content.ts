@@ -6,7 +6,7 @@ export const instagramUrl = 'https://instagram.com/tiledubai';
 export const address = 'Grip Sports Club, Jumeirah Lake Towers, Dubai';
 export const gamesPrice = 30;
 export const termsNote = '*terms & conditions apply';
-export const prizeTerms = '*terms & conditions apply. drinks are redeemed in person at tile within 30 days; one prize per person every 4 weeks.';
+export const prizeTerms = '*terms & conditions apply. the games voucher and complimentary drink are redeemed in person at tile within 30 days; one prize per person every 4 weeks.';
 export const googleMapsUrl = 'https://share.google/lpX3rw7tnS8ZIkqQQ';
 export const googleMapsEmbedUrl = 'https://maps.google.com/maps?q=25.0630879,55.1415203&z=17&output=embed';
 export const gameCategories = [
