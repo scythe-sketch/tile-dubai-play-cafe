@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { createSim, advance, tap, TICK_MS, MIN_TAP_GAP, MIN_CENTER, MAX_CENTER, type Sim } from '@/game/tileStackSim';
+import { createSim, advance, tap, supplyParams, generateTileParams, TICK_MS, MIN_TAP_GAP, MIN_CENTER, MAX_CENTER, type Sim } from '@/game/tileStackSim';
 import * as client from '@/lib/tileStackClient';
 import { X, Volume2, VolumeX, Hand, Scissors, Layers, Trophy, Share2 } from 'lucide-react';
 import { createRenderer, type FallingSlice } from './tileStackRenderer';
@@ -34,6 +34,31 @@ function Experience({ onClose }: { onClose: () => void }) {
   const run = useRef<string | null>(null), ticks = useRef<number[]>([]), pausedRef = useRef(false), mounted = useRef(true), reduced = useRef(false);
   const effects = useRef<{ slices: FallingSlice[]; flash: number; milestone: { score: number; alpha: number } | null }>({ slices: [], flash: 0, milestone: null });
   const completed = useRef(false), requestId = useRef(0);
+  /** live taps go out one at a time, in order; a lost connection ends saving for this round. */
+  const queue = useRef<Promise<void>>(Promise.resolve()), lost = useRef(false), finalScore = useRef<number | null>(null);
+  const [review, setReview] = useState(client.reviewScore() > 0);
+  function send(tick: number, event: client.TapEvent = 'tap') {
+    const id = run.current; if (!id || lost.current) return;
+    queue.current = queue.current.then(async () => {
+      if (lost.current || run.current !== id) return;
+      const res = await client.sendTap(id, tick, event);
+      if (!mounted.current || run.current !== id) return;
+      if (!res.ok) { lost.current = true; setSaving(false); setMessage(res.reason === 'network' ? 'connection lost, score not saved.' : 'this round could not be saved.'); return; }
+      if (!res.over) { if (res.index !== undefined && res.tile && sim.current) supplyParams(sim.current, res.index, res.tile); return; }
+      finalScore.current = res.score;
+      if (res.saved && res.result) { applySaved(res.result); run.current = null; return; }
+      if (res.score > 0) client.keepPendingRun({ runId: id, score: res.score });
+      run.current = null; setSaving(false);
+      if (client.isRegistered()) void submit();
+    });
+  }
+  function applySaved(result: client.SubmitResult) {
+    client.clearPendingRun(); setSaving(false);
+    const best = result.best ?? result.score ?? 0;
+    if (result.pending) { client.setReviewScore(result.score ?? 0); setReview(true); }
+    setOwn({ rank: result.rank ?? 0, best }); setNewBest(Boolean(result.newBest)); setBest(b => Math.max(b, best)); client.saveLocalBest(best);
+    if (result.isFirst && result.newBest) setScreen('winner');
+  }
   useEffect(() => {
     mounted.current = true;
     audio.current = createAudio(); audio.current.setEnabled(client.musicOn());
@@ -75,19 +100,16 @@ function Experience({ onClose }: { onClose: () => void }) {
     if (!pending) return;
     setBusy(true); setSaving(true); setMessage('');
     try {
-      const result = await client.submitRun(pending.runId, pending.tapTicks);
+      const result = await client.submitRun(pending.runId);
       if (!mounted.current) return;
       if (!result.ok) {
-        if (result.reason === 'already_submitted') { client.clearPendingRun(); run.current = null; return; }
+        if (result.reason === 'already_submitted') { client.clearPendingRun(); return; }
         if (result.reason === 'not_registered') { setRegistered(false); setNick(null); setBest(0); return; }
         setMessage(result.reason === 'network' ? 'connection dropped. tap retry to save your score.' : 'this score could not be saved.');
-        if (result.reason !== 'network') { client.clearPendingRun(); run.current = null; }
+        if (result.reason !== 'network') client.clearPendingRun();
         return;
       }
-      client.clearPendingRun(); run.current = null;
-      const best = result.best ?? result.score ?? 0;
-      setOwn({ rank: result.rank ?? 0, best }); setNewBest(Boolean(result.newBest)); setBest(b => Math.max(b, best)); client.saveLocalBest(best);
-      if (result.isFirst && result.newBest) setScreen('winner');
+      applySaved(result);
     } catch { if (mounted.current) setMessage('connection dropped. tap retry to save your score.'); }
     finally { if (mounted.current) { setBusy(false); setSaving(false); } }
   }
@@ -100,19 +122,21 @@ function Experience({ onClose }: { onClose: () => void }) {
     if (!mounted.current || id !== requestId.current) return;
     setOwn(null); setCopied(false);
     if (!client.isRegistered()) { setRegistered(false); setNick(null); setBest(client.localBest()); }
-    const verified = result.ok && result.runId && Number.isFinite(result.seed);
+    const verified = Boolean(result.ok && result.runId && result.tiles?.length === 2);
     run.current = verified ? result.runId! : null;
-    sim.current = createSim(verified ? result.seed! : (globalThis.crypto?.getRandomValues(new Uint32Array(1))[0] ?? Date.now()) >>> 0);
+    /* offline rounds still play, from local tiles, but can't be saved */
+    sim.current = createSim(verified ? result.tiles! : generateTileParams((globalThis.crypto?.getRandomValues(new Uint32Array(1))[0] ?? Date.now()) >>> 0, 2000));
+    queue.current = Promise.resolve(); lost.current = false; finalScore.current = null; setSaving(false);
     ticks.current = []; completed.current = false; effects.current = { slices: [], flash: 0, milestone: null }; pausedRef.current = false;
     setPaused(false); setNewBest(false); setScore(0); setBusy(false); setScreen('playing');
     if (!verified) setMessage(result.reason === 'rate_limited' ? 'slow down a little — this round won’t be saved.' : 'connection is slow — this round may not be saved.');
   }
   function drop() {
     if (screen !== 'playing' || rulesOpen || completed.current || !sim.current) return;
-    if (pausedRef.current) { pausedRef.current = false; setPaused(false); audio.current?.resume(); return; }
+    if (pausedRef.current) { pausedRef.current = false; setPaused(false); audio.current?.resume(); send(sim.current.tick, 'resume'); return; }
     const s = sim.current;
-    if (s.over || s.tick - s.lastTapTick < MIN_TAP_GAP || ticks.current.length >= 2000) return;
-    ticks.current.push(s.tick); tap(s);
+    if (s.over || s.awaiting || s.tick - s.lastTapTick < MIN_TAP_GAP || ticks.current.length >= 2000) return;
+    ticks.current.push(s.tick); send(s.tick); tap(s);
     if (s.over) { audio.current?.gameOver(); return; }
     audio.current?.drop();
     if (s.lastPerfect) { audio.current?.perfect(s.combo); if (!reduced.current) { effects.current.flash = 1; try { navigator.vibrate?.(10); } catch { /* optional */ } } }
@@ -138,21 +162,19 @@ function Experience({ onClose }: { onClose: () => void }) {
           overAge += dt;
           if (overAge >= (reduced.current ? 0 : 650) && !completed.current) {
             completed.current = true; setScore(s.score); const oldBest = client.localBest(); setNewBest(s.score > oldBest); client.saveLocalBest(s.score); setBest(Math.max(oldBest, s.score)); setScreen('over');
-            if (run.current && s.score > 0) client.keepPendingRun({ runId: run.current, tapTicks: [...ticks.current], score: s.score });
-            if (s.score === 0) run.current = null;
-            if (client.pendingRun() && client.isRegistered()) void submit();
+            if (run.current && !lost.current && finalScore.current === null && s.score > 0) setSaving(true);
           }
         }
       }
       raf = requestAnimationFrame(frame);
     }
     raf = requestAnimationFrame(frame);
-    function visibility() { if (document.hidden) { pausedRef.current = true; setPaused(true); audio.current?.suspend(); } }
+    function visibility() { if (document.hidden && !pausedRef.current && sim.current && !sim.current.over) { pausedRef.current = true; setPaused(true); audio.current?.suspend(); send(sim.current.tick, 'pause'); } }
     document.addEventListener('visibilitychange', visibility);
     return () => { cancelAnimationFrame(raf); renderer.destroy(); document.removeEventListener('visibilitychange', visibility); };
   }, [screen]);
   useEffect(() => {
-    if (screen === 'playing' && rulesOpen) { pausedRef.current = true; setPaused(true); audio.current?.suspend(); }
+    if (screen === 'playing' && rulesOpen && !pausedRef.current && sim.current && !sim.current.over) { pausedRef.current = true; setPaused(true); audio.current?.suspend(); send(sim.current.tick, 'pause'); }
   }, [rulesOpen, screen]);
   function keyboard(e: React.KeyboardEvent) {
     if (e.key === 'Escape') { e.stopPropagation(); rulesOpen ? setRulesOpen(false) : onClose(); return; }
@@ -211,6 +233,7 @@ function Experience({ onClose }: { onClose: () => void }) {
       {screen === 'start' && <><div className="ts-idle" aria-hidden="true">{[0,1,2,3,4].map(i => <i key={i} style={{ width: `${170-i*12}px`, marginLeft: `${i*6}px` }}/>)}</div><h1 className="font-display">tile stack</h1><div className="ts-prize"><Trophy size={18}/><div><small>{client.PRIZE.headline}</small><p>{client.PRIZE.line}</p></div></div><button className="ts-terms" onClick={() => setRulesOpen(true)}>{client.PRIZE.terms}</button><h3>how to play</h3><ol className="ts-steps"><li><Hand/>tap anywhere to drop the sliding tile</li><li><Scissors/>whatever hangs over gets sliced off and your tile gets smaller</li><li><Layers/>land it perfectly to keep its size and build a combo</li></ol>{best > 0 && <p>your best: {best}</p>}<p className="ts-muted">weekly reset in {countdown}</p><button className="ts-primary" disabled={busy} onClick={() => void begin()}>{busy ? 'starting…' : 'play'}</button><button onClick={() => setScreen('board')}>leaderboard</button><button className="ts-terms" onClick={() => setRulesOpen(true)}>prize rules</button></>}
       {screen === 'over' && <section className="ts-result"><h1>game over.</h1><strong className="ts-score font-display">{score}</strong>
         {saving && <p className="ts-muted">saving your score…</p>}
+        {own && review && client.reviewScore() >= score && score > 0 && <p className="ts-placement"><b>pending verification</b> · we're checking this round before it goes on the board</p>}
         {own && (newBest ? <><span className="ts-badge">new best!</span><p className="ts-placement">you're <b>#{own.rank}</b> on this week's leaderboard</p></> : <p className="ts-placement">your best this week: <b>{own.best}</b> · you're <b>#{own.rank}</b></p>)}
         {!own && !saving && best > 0 && <p className="ts-muted">your best: {best}</p>}
         {!registered && client.pendingRun() && <form className="ts-form" onSubmit={e => void claim(e)}><h3>put your best score ({client.pendingRun()?.score}) on the leaderboard</h3><label>nickname<input name="nickname" required minLength={3} maxLength={16} pattern="[a-zA-Z0-9_ ]{3,16}" autoComplete="nickname" autoCapitalize="none"/></label><label>instagram<input name="contact" required maxLength={60} placeholder="@yourhandle" autoComplete="off" autoCapitalize="none"/></label><label className="ts-checkbox"><input type="checkbox" required/>i agree to the prize rules</label><button type="button" className="ts-terms" onClick={() => setRulesOpen(true)}>read prize rules</button><button className="ts-primary" disabled={busy}>{busy ? 'saving…' : 'save my score'}</button></form>}
@@ -219,7 +242,7 @@ function Experience({ onClose }: { onClose: () => void }) {
         <button className="ts-primary" disabled={busy} onClick={() => void begin()}>play again</button>
         <button onClick={() => setScreen('board')}>leaderboard</button></section>}
       {screen === 'winner' && <div className="ts-winner"><div className="ts-rain" aria-hidden="true">{Array.from({length:18},(_,i)=><i key={i} style={{ left:`${i*6}%`, animationDelay:`${i*.07}s` }}/>)}</div><Trophy size={64}/><h1>you're on top.</h1><p>you're #1 this week with {score}</p><button onClick={() => setScreen('board')}>see leaderboard</button></div>}
-      {screen === 'board' && <><h1>this week's top 25</h1><p className="ts-muted">resets in {countdown}</p><div className="ts-prize">{client.PRIZE.line}</div><div className="ts-tabs"><button aria-pressed={!lastWeek} onClick={() => setLastWeek(false)}>this week</button><button aria-pressed={lastWeek} onClick={() => setLastWeek(true)}>last week's winner</button></div>{lastWeek ? <p>{board?.lastWinner ? `${board.lastWinner.nickname.toLowerCase()} · ${board.lastWinner.score}` : 'no winner announced yet.'}</p> : <>{!board ? <p>loading leaderboard…</p> : !board.rows.length ? <p>no scores yet this week. be the first.</p> : <ol className="ts-board">{board.rows.slice(0,25).map((row,i) => <li key={`${row.rank}-${row.nickname}`} data-you={isMe(row) ? true : undefined} className={`ts-rank ts-rank-${row.rank}`} style={{ animationDelay:`${i*.045}s` }}>{row.rank === 1 && <span className="ts-crown" aria-hidden="true">▱ ▱ ▱</span>}<b>#{row.rank}</b><span>{row.nickname.toLowerCase()}{isMe(row) && <small> you.</small>}{row.rank === 1 && <small>winning an unlimited games voucher + a drink</small>}</span><strong>{row.score}</strong></li>)}</ol>}{own && own.rank > 25 && <div className="ts-rank ts-pinned" data-you><b>#{own.rank}</b><span>you.</span><strong>{own.best}</strong></div>}</>}<button className="ts-primary" disabled={busy} onClick={() => void begin()}>play again</button><button onClick={() => setRulesOpen(true)}>prize rules</button></>}
+      {screen === 'board' && <><h1>this week's top 25</h1><p className="ts-muted">resets in {countdown}</p><div className="ts-prize">{client.PRIZE.line}</div><div className="ts-tabs"><button aria-pressed={!lastWeek} onClick={() => setLastWeek(false)}>this week</button><button aria-pressed={lastWeek} onClick={() => setLastWeek(true)}>last week's winner</button></div>{lastWeek ? <p>{board?.lastWinner ? `${board.lastWinner.nickname.toLowerCase()} · ${board.lastWinner.score}` : 'no winner announced yet.'}</p> : <>{!board ? <p>loading leaderboard…</p> : !board.rows.length ? <p>no scores yet this week. be the first.</p> : <ol className="ts-board">{board.rows.slice(0,25).map((row,i) => <li key={`${row.rank}-${row.nickname}`} data-you={isMe(row) ? true : undefined} className={`ts-rank ts-rank-${row.rank}`} style={{ animationDelay:`${i*.045}s` }}>{row.rank === 1 && <span className="ts-crown" aria-hidden="true">▱ ▱ ▱</span>}<b>#{row.rank}</b><span>{row.nickname.toLowerCase()}{isMe(row) && <small> you.</small>}{row.rank === 1 && <small>winning an unlimited games voucher + a drink</small>}</span><strong>{row.score}</strong></li>)}</ol>}{review && client.reviewScore() > 0 && <div className="ts-rank ts-pinned" data-you><b>—</b><span>you. <small>pending verification</small></span><strong>{client.reviewScore()}</strong></div>}{own && own.rank > 25 && <div className="ts-rank ts-pinned" data-you><b>#{own.rank}</b><span>you.</span><strong>{own.best}</strong></div>}</>}<button className="ts-primary" disabled={busy} onClick={() => void begin()}>play again</button><button onClick={() => setRulesOpen(true)}>prize rules</button></>}
       {message && <p className="ts-message" role="status">{message}</p>}
       </main>}
       {rulesOpen && <div className="ts-modal" data-rules role="dialog" aria-modal="true" aria-label="prize rules"><div><button autoFocus onClick={() => setRulesOpen(false)} aria-label="close prize rules"><X/></button><h2>prize rules</h2><ul>{rules.map(rule => <li key={rule}>{rule}</li>)}</ul></div></div>}
