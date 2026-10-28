@@ -6,9 +6,9 @@ import { createRenderer, type FallingSlice } from './tileStackRenderer';
 import { createAudio } from './tileStackAudio';
 import './play.css';
 const rules = [
-  'highest score when it resets (sunday 23:59 dubai time) wins 2 unlimited game passes.',
+  'highest score when it resets (sunday 23:59 dubai time) wins 2 free drinks.',
   'winners are contacted on the phone or instagram they entered and announced on @tiledubai.',
-  'passes redeemed in person at tile within 30 days.',
+  'drinks redeemed in person at tile within 30 days.',
   'one prize per person every 4 weeks, otherwise it passes to the next eligible player.',
   'scores are checked before prizes are awarded and tile may remove scores or players that appear to use cheats, bots or multiple accounts.',
   'contact details are used only to contact you about the prize.',
@@ -159,7 +159,7 @@ function Experience({ onClose }: { onClose: () => void }) {
   }
   const touch = typeof window !== 'undefined' && matchMedia('(pointer: coarse)').matches;
   async function share() {
-    const text = `i stacked ${score} at tile 🎲☕ can you beat it? top score each week wins 2 unlimited game passes 🏆`;
+    const text = `i stacked ${score} at tile 🎲☕ can you beat it? top score each week wins 2 free drinks 🏆`;
     const url = 'https://tiledubai.com/#play';
     if (!touch || !navigator.share) {
       /* desktop: copy straight away, inside the click */
@@ -213,7 +213,7 @@ function Experience({ onClose }: { onClose: () => void }) {
         <button className="ts-primary" disabled={busy} onClick={() => void begin()}>play again</button>
         <button onClick={() => setScreen('board')}>leaderboard</button></section>}
       {screen === 'winner' && <div className="ts-winner"><div className="ts-rain" aria-hidden="true">{Array.from({length:18},(_,i)=><i key={i} style={{ left:`${i*6}%`, animationDelay:`${i*.07}s` }}/>)}</div><Trophy size={64}/><h1>you're on top.</h1><p>you're #1 this week with {score}</p><button onClick={() => setScreen('board')}>see leaderboard</button></div>}
-      {screen === 'board' && <><h1>this week's top 25</h1><p className="ts-muted">resets in {countdown}</p><div className="ts-prize">{client.PRIZE.line}</div><div className="ts-tabs"><button aria-pressed={!lastWeek} onClick={() => setLastWeek(false)}>this week</button><button aria-pressed={lastWeek} onClick={() => setLastWeek(true)}>last week's winner</button></div>{lastWeek ? <p>{board?.lastWinner ? `${board.lastWinner.nickname.toLowerCase()} · ${board.lastWinner.score}` : 'no winner announced yet.'}</p> : <>{!board ? <p>loading leaderboard…</p> : !board.rows.length ? <p>no scores yet this week. be the first.</p> : <ol className="ts-board">{board.rows.slice(0,25).map((row,i) => <li key={`${row.rank}-${row.nickname}`} data-you={isMe(row) ? true : undefined} className={`ts-rank ts-rank-${row.rank}`} style={{ animationDelay:`${i*.045}s` }}>{row.rank === 1 && <span className="ts-crown" aria-hidden="true">▱ ▱ ▱</span>}<b>#{row.rank}</b><span>{row.nickname.toLowerCase()}{isMe(row) && <small> you.</small>}{row.rank === 1 && <small>winning 2 unlimited passes</small>}</span><strong>{row.score}</strong></li>)}</ol>}{own && own.rank > 25 && <div className="ts-rank ts-pinned" data-you><b>#{own.rank}</b><span>you.</span><strong>{own.best}</strong></div>}</>}<button className="ts-primary" disabled={busy} onClick={() => void begin()}>play again</button><button onClick={() => setRulesOpen(true)}>prize rules</button></>}
+      {screen === 'board' && <><h1>this week's top 25</h1><p className="ts-muted">resets in {countdown}</p><div className="ts-prize">{client.PRIZE.line}</div><div className="ts-tabs"><button aria-pressed={!lastWeek} onClick={() => setLastWeek(false)}>this week</button><button aria-pressed={lastWeek} onClick={() => setLastWeek(true)}>last week's winner</button></div>{lastWeek ? <p>{board?.lastWinner ? `${board.lastWinner.nickname.toLowerCase()} · ${board.lastWinner.score}` : 'no winner announced yet.'}</p> : <>{!board ? <p>loading leaderboard…</p> : !board.rows.length ? <p>no scores yet this week. be the first.</p> : <ol className="ts-board">{board.rows.slice(0,25).map((row,i) => <li key={`${row.rank}-${row.nickname}`} data-you={isMe(row) ? true : undefined} className={`ts-rank ts-rank-${row.rank}`} style={{ animationDelay:`${i*.045}s` }}>{row.rank === 1 && <span className="ts-crown" aria-hidden="true">▱ ▱ ▱</span>}<b>#{row.rank}</b><span>{row.nickname.toLowerCase()}{isMe(row) && <small> you.</small>}{row.rank === 1 && <small>winning 2 free drinks</small>}</span><strong>{row.score}</strong></li>)}</ol>}{own && own.rank > 25 && <div className="ts-rank ts-pinned" data-you><b>#{own.rank}</b><span>you.</span><strong>{own.best}</strong></div>}</>}<button className="ts-primary" disabled={busy} onClick={() => void begin()}>play again</button><button onClick={() => setRulesOpen(true)}>prize rules</button></>}
       {message && <p className="ts-message" role="status">{message}</p>}
       </main>}
       {rulesOpen && <div className="ts-modal" data-rules role="dialog" aria-modal="true" aria-label="prize rules"><div><button autoFocus onClick={() => setRulesOpen(false)} aria-label="close prize rules"><X/></button><h2>prize rules</h2><ul>{rules.map(rule => <li key={rule}>{rule}</li>)}</ul></div></div>}
