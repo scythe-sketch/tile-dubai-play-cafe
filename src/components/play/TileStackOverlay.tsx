@@ -143,6 +143,8 @@ function Experience({ onClose }: { onClose: () => void }) {
     if (screen === 'playing' && !rulesOpen && (e.key === ' ' || e.key === 'Enter') && !e.repeat && !(e.target as HTMLElement).closest('button,input')) { e.preventDefault(); drop(); }
   }
   async function share() {
+    const text = `i stacked ${score} at tile 🎲☕ can you beat it? top score each week wins 2 unlimited game passes 🏆`;
+    const url = 'https://tiledubai.com/#play';
     try {
       const card = document.createElement('canvas'); card.width = 1080; card.height = 1920; const c = card.getContext('2d'); if (!c) return;
       const styles = getComputedStyle(panel.current!), color = (token: string) => `hsl(${styles.getPropertyValue('--' + token)})`;
@@ -150,10 +152,12 @@ function Experience({ onClose }: { onClose: () => void }) {
       const stack = sim.current?.stack.slice(-14) ?? [];
       stack.forEach((t,i) => { c.fillStyle = color(['primary','tile-cream','tile-wood'][i%3]); c.beginPath(); c.roundRect(540+(t.center-500000)/1000*.9-t.width/1000*.45,1220-i*45,t.width/1000*.9,38,10); c.fill(); });
       c.fillStyle = color('tile-cream'); c.font = '800 240px "League Spartan"'; c.fillText(String(score),540,660); c.font = '800 64px "League Spartan"'; c.fillText(`i stacked ${score} at tile.`,540,1450); c.fillText('beat me.',540,1530); c.font = '36px "Public Sans"'; c.fillText('tiledubai.com/#play',540,1740);
-      const blob = await new Promise<Blob | null>(resolve => card.toBlob(resolve,'image/png')); if (!blob) return;
-      const file = new File([blob], 'tile-stack.png', { type: 'image/png' });
-      if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: 'tile stack' });
-      else { const url = URL.createObjectURL(blob), link = document.createElement('a'); link.href = url; link.download = file.name; link.click(); setTimeout(() => URL.revokeObjectURL(url),1000); }
+      const blob = await new Promise<Blob | null>(resolve => card.toBlob(resolve,'image/png'));
+      const file = blob ? new File([blob], 'tile-stack.png', { type: 'image/png' }) : null;
+      if (file && navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title: 'tile stack', text, url }); return; }
+      if (navigator.share) { await navigator.share({ title: 'tile stack', text, url }); return; }
+      try { await navigator.clipboard.writeText(`${text} ${url}`); setMessage('challenge copied — paste it anywhere to share.'); } catch { setMessage(text); }
+      if (blob) { const objectUrl = URL.createObjectURL(blob), link = document.createElement('a'); link.href = objectUrl; link.download = 'tile-stack.png'; link.click(); setTimeout(() => URL.revokeObjectURL(objectUrl),1000); }
     } catch (error) { if (!(error instanceof DOMException && error.name === 'AbortError')) setMessage('sharing is unavailable. please try again.'); }
   }
   return <div className="ts-overlay dark-section" role="dialog" aria-modal="true" aria-label="tile stack" onKeyDown={keyboard}>
