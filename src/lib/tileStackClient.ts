@@ -248,3 +248,28 @@ export function setMyNickname(nickname: string) {
     /* ignore */
   }
 }
+
+/** the highest-scoring round that hasn't reached the leaderboard yet (e.g. played before sign-up or while offline). */
+export type PendingRun = { runId: string; tapTicks: number[]; score: number };
+const PENDING_KEY = 'tile.stack.pending';
+
+export function pendingRun(): PendingRun | null {
+  try {
+    const value = JSON.parse(window.localStorage.getItem(PENDING_KEY) ?? 'null');
+    return value && typeof value.runId === 'string' && Array.isArray(value.tapTicks) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/** keeps only the best unsaved round; returns the round that should be submitted. */
+export function keepPendingRun(run: PendingRun): PendingRun {
+  const current = pendingRun();
+  if (current && current.score >= run.score) return current;
+  try { window.localStorage.setItem(PENDING_KEY, JSON.stringify(run)); } catch { /* ignore */ }
+  return run;
+}
+
+export function clearPendingRun() {
+  try { window.localStorage.removeItem(PENDING_KEY); } catch { /* ignore */ }
+}

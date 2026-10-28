@@ -71,19 +71,20 @@ function Experience({ onClose }: { onClose: () => void }) {
     audio.current?.numberOne(); const timer = setTimeout(() => setScreen('board'), reduced.current ? 700 : 2400); return () => clearTimeout(timer);
   }, [screen]);
   async function submit() {
-    if (!run.current) return;
+    const pending = client.pendingRun();
+    if (!pending) return;
     setBusy(true); setSaving(true); setMessage('');
     try {
-      const result = await client.submitRun(run.current, ticks.current);
+      const result = await client.submitRun(pending.runId, pending.tapTicks);
       if (!mounted.current) return;
       if (!result.ok) {
-        if (result.reason === 'already_submitted') { run.current = null; return; }
+        if (result.reason === 'already_submitted') { client.clearPendingRun(); run.current = null; return; }
         if (result.reason === 'not_registered') { setRegistered(false); setNick(null); setBest(0); return; }
         setMessage(result.reason === 'network' ? 'connection dropped. tap retry to save your score.' : 'this score could not be saved.');
-        if (result.reason !== 'network') run.current = null;
+        if (result.reason !== 'network') { client.clearPendingRun(); run.current = null; }
         return;
       }
-      run.current = null;
+      client.clearPendingRun(); run.current = null;
       const best = result.best ?? result.score ?? 0;
       setOwn({ rank: result.rank ?? 0, best }); setNewBest(Boolean(result.newBest)); setBest(b => Math.max(b, best)); client.saveLocalBest(best);
       if (result.isFirst && result.newBest) setScreen('winner');
@@ -137,7 +138,9 @@ function Experience({ onClose }: { onClose: () => void }) {
           overAge += dt;
           if (overAge >= (reduced.current ? 0 : 650) && !completed.current) {
             completed.current = true; setScore(s.score); const oldBest = client.localBest(); setNewBest(s.score > oldBest); client.saveLocalBest(s.score); setBest(Math.max(oldBest, s.score)); setScreen('over');
-            if (run.current && s.score > 0 && client.isRegistered()) void submit(); else if (s.score === 0) run.current = null;
+            if (run.current && s.score > 0) client.keepPendingRun({ runId: run.current, tapTicks: [...ticks.current], score: s.score });
+            if (s.score === 0) run.current = null;
+            if (client.pendingRun() && client.isRegistered()) void submit();
           }
         }
       }
