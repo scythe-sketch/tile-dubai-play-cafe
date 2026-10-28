@@ -8,7 +8,7 @@ import {
   PRIZE,
   type LeaderboardRow,
 } from '@/lib/tileStackClient';
-import { termsNote } from '@/lib/tile-content';
+import { nicknameNote, termsNote } from '@/lib/tile-content';
 
 /** the game is heavy; it only reaches the browser once the overlay is opened. */
 const TileStackOverlay = lazy(() =>
