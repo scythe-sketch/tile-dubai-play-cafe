@@ -85,7 +85,11 @@ export const PlaySection = () => {
             </div>
           </div>
           <p className="play-announce">winner announced on our instagram — @tiledubai</p>
-          <p className="price-terms">{termsNote}</p>
+          <p className="price-terms">
+            {termsNote}
+            <br />
+            {nicknameNote}
+          </p>
           <Button size="lg" className="play-cta" onClick={() => setOpen(true)}>
             Play tile stack <Play />
           </Button>
