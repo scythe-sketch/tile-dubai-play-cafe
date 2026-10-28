@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test';
-import { gamesPrice, gameCategories, tableBookingUrl, deskBookingUrl, eventBookingUrl, events, address, googleMapsUrl, googleMapsEmbedUrl, termsNote, prizeTerms } from './tile-content';
+import { gamesPrice, gameCategories, tableBookingUrl, deskBookingUrl, eventBookingUrl, events, address, googleMapsUrl, googleMapsEmbedUrl, termsNote, prizeTerms, nicknameNote } from './tile-content';
 import { hasPrice } from './menu-data';
 test('Unlimited gaming is AED 30 per person',()=>expect(gamesPrice).toBe(30));
 test('Strategy has the five specified games',()=>expect(gameCategories[0].games).toEqual(['Catan','Ticket to Ride','Splendor','Azul','Pandemic']));
@@ -20,4 +20,8 @@ test("price terms", () => {
   expect(termsNote).toBe("*terms & conditions apply");
   expect(prizeTerms).toContain("unlimited board games voucher and drink are redeemed in person at tile within 30 days");
   expect(prizeTerms).toContain("one prize per person every 4 weeks");
+});
+
+test("fine print warns that inappropriate nicknames are removed", () => {
+  expect(nicknameNote).toContain("inappropriate nicknames are removed");
 });
