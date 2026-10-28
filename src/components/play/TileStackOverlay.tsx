@@ -35,7 +35,7 @@ function Experience({ onClose }: { onClose: () => void }) {
   const effects = useRef<{ slices: FallingSlice[]; flash: number; milestone: { score: number; alpha: number } | null }>({ slices: [], flash: 0, milestone: null });
   const completed = useRef(false), requestId = useRef(0);
   /** live taps go out one at a time, in order; a lost connection ends saving for this round. */
-  const queue = useRef<Promise<void>>(Promise.resolve()), lost = useRef(false), finalScore = useRef<number | null>(null);
+  const queue = useRef<Promise<void>>(Promise.resolve()), lost = useRef(false), savedRef = useRef(false), finalScore = useRef<number | null>(null);
   const [review, setReview] = useState(client.reviewScore() > 0);
   function send(tick: number, event: client.TapEvent = 'tap') {
     const id = run.current; if (!id || lost.current) return;
@@ -53,7 +53,7 @@ function Experience({ onClose }: { onClose: () => void }) {
     });
   }
   function applySaved(result: client.SubmitResult) {
-    client.clearPendingRun(); setSaving(false);
+    savedRef.current = true; client.clearPendingRun(); setSaving(false);
     const best = result.best ?? result.score ?? 0;
     if (result.pending) { client.setReviewScore(result.score ?? 0); setReview(true); }
     setOwn({ rank: result.rank ?? 0, best }); setNewBest(Boolean(result.newBest)); setBest(b => Math.max(b, best)); client.saveLocalBest(best);
@@ -126,7 +126,7 @@ function Experience({ onClose }: { onClose: () => void }) {
     run.current = verified ? result.runId! : null;
     /* offline rounds still play, from local tiles, but can't be saved */
     sim.current = createSim(verified ? result.tiles! : generateTileParams((globalThis.crypto?.getRandomValues(new Uint32Array(1))[0] ?? Date.now()) >>> 0, 2000));
-    queue.current = Promise.resolve(); lost.current = false; finalScore.current = null; setSaving(false);
+    queue.current = Promise.resolve(); lost.current = false; savedRef.current = false; finalScore.current = null; setSaving(false);
     ticks.current = []; completed.current = false; effects.current = { slices: [], flash: 0, milestone: null }; pausedRef.current = false;
     setPaused(false); setNewBest(false); setScore(0); setBusy(false); setScreen('playing');
     if (!verified) setMessage(result.reason === 'rate_limited' ? 'slow down a little — this round won’t be saved.' : 'connection is slow — this round may not be saved.');
@@ -161,7 +161,7 @@ function Experience({ onClose }: { onClose: () => void }) {
         if (s.over) {
           overAge += dt;
           if (overAge >= (reduced.current ? 0 : 650) && !completed.current) {
-            completed.current = true; setScore(s.score); const oldBest = client.localBest(); setNewBest(s.score > oldBest); client.saveLocalBest(s.score); setBest(Math.max(oldBest, s.score)); setScreen('over');
+            completed.current = true; setScore(s.score); if (!savedRef.current) { const oldBest = client.localBest(); setNewBest(s.score > oldBest); client.saveLocalBest(s.score); setBest(Math.max(oldBest, s.score)); } setScreen(sc => sc === 'winner' ? sc : 'over');
             if (run.current && !lost.current && finalScore.current === null && s.score > 0) setSaving(true);
           }
         }
