@@ -27,7 +27,7 @@ function Experience({ onClose }: { onClose: () => void }) {
   const [best, setBest] = useState(client.localBest()), [newBest, setNewBest] = useState(false), [score, setScore] = useState(0), [paused, setPaused] = useState(false);
   const [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [registered, setRegistered] = useState(client.isRegistered());
   const [board, setBoard] = useState<client.Leaderboard | null>(null), [lastWeek, setLastWeek] = useState(false), [own, setOwn] = useState<{ rank: number; best: number } | null>(null);
-  const [saving, setSaving] = useState(false), [offline, setOffline] = useState(false), [copied, setCopied] = useState(false), [nick, setNick] = useState(client.myNickname());
+  const [saving, setSaving] = useState(false), [copied, setCopied] = useState(false), [nick, setNick] = useState(client.myNickname());
   const [countdown, setCountdown] = useState(() => client.formatCountdown(client.nextResetAt()));
   const canvas = useRef<HTMLCanvasElement>(null), panel = useRef<HTMLDivElement>(null), sim = useRef<Sim | null>(null), audio = useRef<ReturnType<typeof createAudio> | null>(null);
   const run = useRef<string | null>(null), ticks = useRef<number[]>([]), pausedRef = useRef(false), mounted = useRef(true), reduced = useRef(false);
@@ -95,7 +95,7 @@ function Experience({ onClose }: { onClose: () => void }) {
     try { result = await Promise.race([client.startRun(), new Promise<client.StartResult>(resolve => setTimeout(() => resolve({ ok: false, reason: 'network' }), 6000))]); }
     catch { result = { ok: false, reason: 'network' }; }
     if (!mounted.current || id !== requestId.current) return;
-    setOwn(null); setOffline(!result.ok); setCopied(false);
+    setOwn(null); setCopied(false);
     const verified = result.ok && result.runId && Number.isFinite(result.seed);
     run.current = verified ? result.runId! : null;
     sim.current = createSim(verified ? result.seed! : (globalThis.crypto?.getRandomValues(new Uint32Array(1))[0] ?? Date.now()) >>> 0);
@@ -209,7 +209,6 @@ function Experience({ onClose }: { onClose: () => void }) {
         {!own && !saving && best > 0 && <p className="ts-muted">your best: {best}</p>}
         {!registered && run.current && score > 0 && <form className="ts-form" onSubmit={e => void claim(e)}><h3>put your score on the leaderboard</h3><label>nickname<input name="nickname" required minLength={3} maxLength={16} pattern="[a-zA-Z0-9_ ]{3,16}" autoComplete="nickname" autoCapitalize="none"/></label><label>phone or instagram<input name="contact" required maxLength={40} placeholder="+971 5x xxx xxxx or @yourhandle" autoComplete="off" autoCapitalize="none"/></label><label className="ts-checkbox"><input type="checkbox" required/>i agree to the prize rules</label><button type="button" className="ts-terms" onClick={() => setRulesOpen(true)}>read prize rules</button><button className="ts-primary" disabled={busy}>{busy ? 'saving…' : 'save my score'}</button></form>}
         {registered && run.current && !saving && score > 0 && <button disabled={busy} onClick={() => void submit()}>retry saving score</button>}
-        {offline && <p className="ts-muted">this round was played offline, so it couldn't be saved.</p>}
         <button className="ts-share" onClick={() => void share()}><Share2 size={17}/>{copied ? 'copied!' : 'share your score'}</button>
         <button className="ts-primary" disabled={busy} onClick={() => void begin()}>play again</button>
         <button onClick={() => setScreen('board')}>leaderboard</button></section>}
