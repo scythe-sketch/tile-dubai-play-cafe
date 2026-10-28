@@ -185,7 +185,7 @@ describe('tile stack simulation', () => {
     let rejected = '';
     for (const t of taps) {
       const r = applyPace(pace, 'tap', t, now + 5); // all arrive within milliseconds
-      if (!r.ok) { rejected = r.reason; break; }
+      if (r.ok === false) { rejected = r.reason; break; }
       pace = r.state;
     }
     expect(rejected).toBe('too_fast');

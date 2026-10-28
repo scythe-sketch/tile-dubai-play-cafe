@@ -43,8 +43,8 @@ function Experience({ onClose }: { onClose: () => void }) {
       if (lost.current || run.current !== id) return;
       const res = await client.sendTap(id, tick, event);
       if (!mounted.current || run.current !== id) return;
-      if (!res.ok) { lost.current = true; setSaving(false); setMessage(res.reason === 'network' ? 'connection lost, score not saved.' : 'this round could not be saved.'); return; }
-      if (!res.over) { if (res.index !== undefined && res.tile && sim.current) supplyParams(sim.current, res.index, res.tile); return; }
+      if (res.ok === false) { lost.current = true; setSaving(false); setMessage(res.reason === 'network' ? 'connection lost, score not saved.' : 'this round could not be saved.'); return; }
+      if (res.over === false) { if (res.index !== undefined && res.tile && sim.current) supplyParams(sim.current, res.index, res.tile); return; }
       finalScore.current = res.score;
       if (res.saved && res.result) { applySaved(res.result); run.current = null; return; }
       if (res.score > 0) client.keepPendingRun({ runId: id, score: res.score });
