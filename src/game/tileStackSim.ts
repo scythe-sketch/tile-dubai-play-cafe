@@ -154,8 +154,9 @@ export function tap(sim: Sim): Sim {
     center = below.center;
     width = cur.width;
   } else {
-    center = even(Math.max(curLeft, belowLeft) + Math.min(curRight, belowRight)) / 2;
-    center = Math.round(center);
+    const overlapLeft = Math.max(curLeft, belowLeft);
+    const overlapRight = Math.min(curRight, belowRight);
+    center = even(overlapLeft + overlapRight) / 2;
     width = even(overlap);
     if (curRight > belowRight) {
       sim.lastSlice = { center: (belowRight + curRight) / 2, width: curRight - belowRight, dir: 1, tick: sim.tick };
