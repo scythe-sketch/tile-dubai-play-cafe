@@ -7,16 +7,16 @@ import { createAudio } from './tileStackAudio';
 import './play.css';
 const rules = [
   'highest score when it resets (sunday 23:59 dubai time) wins 2 free drinks.',
-  'winners are contacted on the phone or instagram they entered and announced on @tiledubai.',
+  'winners are contacted on the instagram they entered and announced on @tiledubai.',
   'drinks redeemed in person at tile within 30 days.',
   'one prize per person every 4 weeks, otherwise it passes to the next eligible player.',
   'scores are checked before prizes are awarded and tile may remove scores or players that appear to use cheats, bots or multiple accounts.',
-  'contact details are used only to contact you about the prize.',
+  'your instagram handle is encrypted and used only to contact you about the prize.',
 ];
 const registerMessages: Record<string, string> = {
   nickname_taken: 'that nickname is taken. try another one.',
   invalid_nickname: 'nickname needs 3–16 letters, numbers, spaces or _.',
-  invalid_contact: 'enter a uae mobile (05x or +971) or an instagram @handle.',
+  invalid_contact: 'enter your instagram @handle.',
   rate_limited: 'too many sign-ups from this connection today. try again later.',
 };
 type Screen = 'start' | 'playing' | 'over' | 'board' | 'winner';
@@ -207,7 +207,7 @@ function Experience({ onClose }: { onClose: () => void }) {
         {saving && <p className="ts-muted">saving your score…</p>}
         {own && (newBest ? <><span className="ts-badge">new best!</span><p className="ts-placement">you're <b>#{own.rank}</b> on this week's leaderboard</p></> : <p className="ts-placement">your best this week: <b>{own.best}</b> · you're <b>#{own.rank}</b></p>)}
         {!own && !saving && best > 0 && <p className="ts-muted">your best: {best}</p>}
-        {!registered && run.current && score > 0 && <form className="ts-form" onSubmit={e => void claim(e)}><h3>put your score on the leaderboard</h3><label>nickname<input name="nickname" required minLength={3} maxLength={16} pattern="[a-zA-Z0-9_ ]{3,16}" autoComplete="nickname" autoCapitalize="none"/></label><label>phone or instagram<input name="contact" required maxLength={40} placeholder="+971 5x xxx xxxx or @yourhandle" autoComplete="off" autoCapitalize="none"/></label><label className="ts-checkbox"><input type="checkbox" required/>i agree to the prize rules</label><button type="button" className="ts-terms" onClick={() => setRulesOpen(true)}>read prize rules</button><button className="ts-primary" disabled={busy}>{busy ? 'saving…' : 'save my score'}</button></form>}
+        {!registered && run.current && score > 0 && <form className="ts-form" onSubmit={e => void claim(e)}><h3>put your score on the leaderboard</h3><label>nickname<input name="nickname" required minLength={3} maxLength={16} pattern="[a-zA-Z0-9_ ]{3,16}" autoComplete="nickname" autoCapitalize="none"/></label><label>instagram<input name="contact" required maxLength={60} placeholder="@yourhandle" autoComplete="off" autoCapitalize="none"/></label><label className="ts-checkbox"><input type="checkbox" required/>i agree to the prize rules</label><button type="button" className="ts-terms" onClick={() => setRulesOpen(true)}>read prize rules</button><button className="ts-primary" disabled={busy}>{busy ? 'saving…' : 'save my score'}</button></form>}
         {registered && run.current && !saving && score > 0 && <button disabled={busy} onClick={() => void submit()}>retry saving score</button>}
         <button className="ts-share" onClick={() => void share()}><Share2 size={17}/>{copied ? 'copied!' : 'share your score'}</button>
         <button className="ts-primary" disabled={busy} onClick={() => void begin()}>play again</button>
