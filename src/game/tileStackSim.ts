@@ -4,8 +4,9 @@
  * this module is deliberately free of the dom, date, math.random and
  * requestAnimationFrame. it is the single source of truth for how a run
  * resolves: the browser runs it to draw the game, and the edge function runs
- * an identical copy to recompute every submitted score. the same seed plus the
- * same tap ticks always produces the same result.
+ * an identical copy to recompute every score. the same per-tile parameters plus
+ * the same tap ticks always produce the same result. the seed that generates the
+ * parameters never leaves the server; the browser is fed tiles two at a time.
  *
  * every position is an integer in milli-units (U = 1000 milli-units per world
  * unit), so no browser's floating point can change an outcome.
@@ -28,12 +29,22 @@ export const MAX_TAPS = 2000;
 export const TICKS_PER_SECOND = 60;
 export const MILESTONE_EVERY = 10;
 export const TICK_MS = 1000 / TICKS_PER_SECOND;
+/** the number of tiles placed when the speed curve first hits MAX_SPEED. */
+export const SPEED_CAP_TILE = Math.ceil((MAX_SPEED - START_SPEED) / SPEED_STEP);
+export const MAX_START_OFFSET = 200 * U;
+
+/** what the server reveals about one tile: entry side, start offset and speed multiplier (permille). */
+export type TileParams = { fromLeft: boolean; offset: number; speedMul: number };
 
 export type Tile = { center: number; width: number };
 export type Slice = { center: number; width: number; dir: 1 | -1; tick: number };
 
 export type Sim = {
-  seed: number;
+  params: TileParams[];
+  /** ticks that passed while the next tile's parameters were not known yet. */
+  waitingTicks: number;
+  awaiting: boolean;
+  perfectsAfterCap: number;
   tick: number;
   score: number;
   combo: number;
@@ -48,7 +59,6 @@ export type Sim = {
   lastPerfect: boolean;
   lastGrew: boolean;
   lastSlice: Slice | null;
-  rand: () => number;
 };
 
 export type ReplayResult = {
@@ -56,6 +66,7 @@ export type ReplayResult = {
   totalTicks: number;
   perfects: number;
   maxCombo: number;
+  perfectsAfterCap: number;
   over: boolean;
 };
 
@@ -74,17 +85,49 @@ export function mulberry32(seed: number) {
 /** widths stay even so every edge lands on a whole milli-unit. */
 const even = (n: number) => n - (n % 2);
 
-function spawn(sim: Sim) {
-  const below = sim.stack[sim.stack.length - 1];
-  const fromLeft = sim.rand() < 0.5;
-  sim.current = { center: fromLeft ? MIN_CENTER : MAX_CENTER, width: below.width };
-  sim.dir = fromLeft ? 1 : -1;
+/** server only: derive every tile's parameters from the secret run seed. */
+export function generateTileParams(seed: number, count: number): TileParams[] {
+  const rand = mulberry32(seed >>> 0);
+  const out: TileParams[] = [];
+  for (let i = 0; i < count; i++) {
+    const fromLeft = rand() < 0.5;
+    const offset = even(Math.floor(rand() * (MAX_START_OFFSET + 1)));
+    const speedMul = 920 + Math.floor(rand() * 161);
+    out.push({ fromLeft, offset, speedMul });
+  }
+  return out;
 }
 
-export function createSim(seed: number): Sim {
+export function isValidTileParams(p: unknown): p is TileParams {
+  const t = p as TileParams;
+  return !!t && typeof t.fromLeft === 'boolean' && Number.isInteger(t.offset) && t.offset >= 0 && t.offset <= MAX_START_OFFSET
+    && Number.isInteger(t.speedMul) && t.speedMul >= 920 && t.speedMul <= 1080;
+}
+
+function baseSpeed(score: number) {
+  return Math.min(MAX_SPEED, START_SPEED + SPEED_STEP * score);
+}
+
+function spawn(sim: Sim) {
+  const p = sim.params[sim.score];
+  if (!p) { sim.awaiting = true; return; }
+  sim.awaiting = false;
+  const below = sim.stack[sim.stack.length - 1];
+  sim.current = { center: p.fromLeft ? MIN_CENTER + p.offset : MAX_CENTER - p.offset, width: below.width };
+  sim.dir = p.fromLeft ? 1 : -1;
+  sim.speed = Math.trunc((baseSpeed(sim.score) * p.speedMul) / 1000);
+  const wait = sim.waitingTicks;
+  sim.waitingTicks = 0;
+  if (wait > 0) move(sim, wait);
+}
+
+export function createSim(params: TileParams[]): Sim {
   const base: Tile = { center: FIELD_WIDTH / 2, width: BASE_WIDTH };
   const sim: Sim = {
-    seed: seed >>> 0,
+    params: [...params],
+    waitingTicks: 0,
+    awaiting: false,
+    perfectsAfterCap: 0,
     tick: 0,
     score: 0,
     combo: 0,
@@ -99,17 +142,19 @@ export function createSim(seed: number): Sim {
     lastPerfect: false,
     lastGrew: false,
     lastSlice: null,
-    rand: mulberry32(seed >>> 0),
   };
   spawn(sim);
   return sim;
 }
 
-/** advance the moving tile by whole ticks, bouncing off the playfield ends. */
-export function advance(sim: Sim, ticks: number): Sim {
-  if (sim.over || ticks <= 0) return sim;
+/** hand the sim more tile parameters (the browser gets them as the server reveals them). */
+export function supplyParams(sim: Sim, index: number, params: TileParams) {
+  sim.params[index] = params;
+  if (sim.awaiting && index === sim.score && !sim.over) spawn(sim);
+}
+
+function move(sim: Sim, ticks: number) {
   for (let i = 0; i < ticks; i++) {
-    sim.tick += 1;
     let center = sim.current.center + sim.dir * sim.speed;
     if (center <= MIN_CENTER) {
       center = MIN_CENTER;
@@ -120,12 +165,20 @@ export function advance(sim: Sim, ticks: number): Sim {
     }
     sim.current.center = center;
   }
+}
+
+/** advance the moving tile by whole ticks, bouncing off the playfield ends. */
+export function advance(sim: Sim, ticks: number): Sim {
+  if (sim.over || ticks <= 0) return sim;
+  sim.tick += ticks;
+  if (sim.awaiting) sim.waitingTicks += ticks;
+  else move(sim, ticks);
   return sim;
 }
 
 /** drop the moving tile wherever it is right now. */
 export function tap(sim: Sim): Sim {
-  if (sim.over) return sim;
+  if (sim.over || sim.awaiting) return sim;
   if (sim.tick - sim.lastTapTick < MIN_TAP_GAP) return sim; // double-tap guard
   sim.lastTapTick = sim.tick;
   sim.lastPerfect = false;
@@ -175,6 +228,7 @@ export function tap(sim: Sim): Sim {
 
   if (perfect) {
     sim.perfects += 1;
+    if (sim.score > SPEED_CAP_TILE) sim.perfectsAfterCap += 1;
     sim.combo += 1;
     sim.maxCombo = Math.max(sim.maxCombo, sim.combo);
     if (sim.combo % COMBO_INTERVAL === 0) {
@@ -186,18 +240,17 @@ export function tap(sim: Sim): Sim {
     sim.combo = 0;
   }
 
-  sim.speed = Math.min(MAX_SPEED, START_SPEED + SPEED_STEP * sim.score);
   sim.lastPerfect = perfect;
   spawn(sim);
   return sim;
 }
 
 /**
- * replay a whole run from the server-issued seed and the player's tap ticks.
- * the edge function runs this and only ever stores what it returns.
+ * replay a whole run from its tile parameters and the player's tap ticks.
+ * the tap edge function runs this and only ever stores what it returns.
  */
-export function replay(seed: number, tapTicks: number[]): ReplayResult {
-  const sim = createSim(seed);
+export function replay(params: TileParams[], tapTicks: number[]): ReplayResult {
+  const sim = createSim(params);
   let previous = -Infinity;
   let lastAccepted = 0;
   for (const tick of tapTicks) {
@@ -213,6 +266,7 @@ export function replay(seed: number, tapTicks: number[]): ReplayResult {
     totalTicks: Math.max(sim.tick, lastAccepted),
     perfects: sim.perfects,
     maxCombo: sim.maxCombo,
+    perfectsAfterCap: sim.perfectsAfterCap,
     over: sim.over,
   };
 }
@@ -231,4 +285,20 @@ export function isValidTapTicks(tapTicks: unknown): tapTicks is number[] {
 
 export function isMilestone(score: number) {
   return score > 0 && score % MILESTONE_EVERY === 0;
+}
+
+/** standard deviation of the gaps between taps, in ticks. */
+export function tapDeviation(tapTicks: number[]): number {
+  const gaps = tapTicks.slice(1).map((t, i) => t - tapTicks[i]);
+  if (!gaps.length) return 0;
+  const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+  return Math.sqrt(gaps.reduce((sum, g) => sum + (g - mean) ** 2, 0) / gaps.length);
+}
+
+/** silent bot checks; a flagged run waits for staff review before it can reach the board. */
+export function needsReview(result: ReplayResult, tapTicks: number[]): boolean {
+  if (result.perfectsAfterCap > 8) return true;
+  if (result.score > 30 && result.perfects / result.score > 0.6) return true;
+  if (tapTicks.length >= 15 && tapDeviation(tapTicks) < 3) return true;
+  return false;
 }
