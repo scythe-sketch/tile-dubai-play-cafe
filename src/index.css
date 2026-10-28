@@ -171,6 +171,7 @@
 .play-prize h3 { font-size:23px; line-height:1.15; }
 .play-prize p { color:hsl(var(--muted-foreground)); font-size:12px; margin-top:6px; }
 .price-mark { color:hsl(var(--primary)); font-weight:700; padding-left:1px; }
+.play-announce { font-size:17px; font-weight:600; color:hsl(var(--primary)); line-height:1.5; }
 .price-terms { font-size:11px; color:hsl(var(--muted-foreground)); line-height:1.7; max-width:430px; }
 .play-cta { gap:10px; }
 .play-preview { border:1px solid hsl(var(--border)); border-radius:16px; background:hsl(var(--card)); padding:24px; }

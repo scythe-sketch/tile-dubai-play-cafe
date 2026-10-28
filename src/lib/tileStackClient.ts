@@ -14,7 +14,7 @@ const MUSIC_KEY = 'tile.stack.music';
 
 export const PRIZE = {
   headline: 'this week’s prize',
-  line: 'top score by sunday midnight wins a free games voucher + a complimentary drink.',
+  line: 'top score by sunday midnight wins an unlimited board games voucher + a drink.',
   terms: '*terms & conditions apply',
 };
 
