@@ -8,7 +8,7 @@ import {
   PRIZE,
   type LeaderboardRow,
 } from '@/lib/tileStackClient';
-import { termsNote } from '@/lib/tile-content';
+import { nicknameNote, termsNote } from '@/lib/tile-content';
 
 /** the game is heavy; it only reaches the browser once the overlay is opened. */
 const TileStackOverlay = lazy(() =>
@@ -85,7 +85,11 @@ export const PlaySection = () => {
             </div>
           </div>
           <p className="play-announce">winner announced on our instagram — @tiledubai</p>
-          <p className="price-terms">{termsNote}</p>
+          <p className="price-terms">
+            {termsNote}
+            <br />
+            {nicknameNote}
+          </p>
           <Button size="lg" className="play-cta" onClick={() => setOpen(true)}>
             Play tile stack <Play />
           </Button>

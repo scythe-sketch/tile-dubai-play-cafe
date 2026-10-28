@@ -11,6 +11,7 @@ const rules = [
   'prizes redeemed in person at tile within 30 days.',
   'one prize per person every 4 weeks, otherwise it passes to the next eligible player.',
   'scores are checked before prizes are awarded and tile may remove scores or players that appear to use cheats, bots or multiple accounts.',
+  'inappropriate nicknames are removed from the leaderboard.',
   'your instagram handle is encrypted and used only to contact you about the prize.',
 ];
 const registerMessages: Record<string, string> = {
