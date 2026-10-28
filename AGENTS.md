@@ -5,3 +5,5 @@
 - Use semantic HSL tokens and scoped dark section themes for the alternating charcoal and cream design.
 - Use ScrollEffects for viewport entrances and photo drift, with reduced-motion support and visible content as the fallback; keep category transitions local to their sections.
 - Keep a single text bun.lock with public HTTPS npm tarball URLs and preserved integrity hashes; internal cache hostnames are not resolvable in all build environments.
+- Keep `src/game/tileStackSim.ts` and `supabase/functions/_shared/tileStackSim.ts` byte-identical: the server replays that exact copy to score every run.
+- Scores are only ever written by the server replay; the browser submits tap ticks and a run id, never a score.
