@@ -15,3 +15,8 @@ test('Unwanted community events cannot be booked from the event list',()=>{
  expect(events.some(event=>event.name==='Missing Piece Meetups')).toBe(false);
  expect(events.some(event=>event.name==='Creative nights')).toBe(false);
 });
+
+test("price terms", () => {
+  expect(termsNote).toBe("*terms & conditions apply");
+  expect(prizeTerms).toContain("2 unlimited game passes");
+});
