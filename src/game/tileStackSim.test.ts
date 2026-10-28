@@ -49,9 +49,13 @@ describe('tile stack simulation', () => {
     expect(first.totalTicks).toBeGreaterThan(0);
   });
 
-  test('a different seed changes the outcome', () => {
-    const taps = perfectTaps(12345, 8);
-    expect(replay(998877, taps).score).not.toBe(replay(12345, taps).score);
+  test('the score comes only from the taps that were played', () => {
+    const seed = 12345;
+    const long = replay(seed, perfectTaps(seed, 12));
+    const short = replay(seed, perfectTaps(seed, 6));
+    expect(long.score).toBe(12);
+    expect(short.score).toBe(6);
+    expect(long.totalTicks).toBeGreaterThan(short.totalTicks);
   });
 
   test('a tap with no overlap ends the game', () => {
