@@ -14,13 +14,178 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      players: {
+        Row: {
+          banned: boolean
+          contact: string
+          created_at: string
+          device_token_hash: string
+          id: string
+          ip_hash: string | null
+          nickname: string
+        }
+        Insert: {
+          banned?: boolean
+          contact: string
+          created_at?: string
+          device_token_hash: string
+          id?: string
+          ip_hash?: string | null
+          nickname: string
+        }
+        Update: {
+          banned?: boolean
+          contact?: string
+          created_at?: string
+          device_token_hash?: string
+          id?: string
+          ip_hash?: string | null
+          nickname?: string
+        }
+        Relationships: []
+      }
+      runs: {
+        Row: {
+          id: string
+          ip_hash: string | null
+          max_combo: number
+          needs_review: boolean
+          perfects: number
+          player_id: string
+          reject_reason: string | null
+          score: number
+          seed: number
+          started_at: string
+          status: string
+          submitted_at: string | null
+          tap_ticks: number[]
+          total_ticks: number
+          week_key: string
+        }
+        Insert: {
+          id?: string
+          ip_hash?: string | null
+          max_combo?: number
+          needs_review?: boolean
+          perfects?: number
+          player_id: string
+          reject_reason?: string | null
+          score?: number
+          seed: number
+          started_at?: string
+          status?: string
+          submitted_at?: string | null
+          tap_ticks?: number[]
+          total_ticks?: number
+          week_key?: string
+        }
+        Update: {
+          id?: string
+          ip_hash?: string | null
+          max_combo?: number
+          needs_review?: boolean
+          perfects?: number
+          player_id?: string
+          reject_reason?: string | null
+          score?: number
+          seed?: number
+          started_at?: string
+          status?: string
+          submitted_at?: string | null
+          tap_ticks?: number[]
+          total_ticks?: number
+          week_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "runs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_best: {
+        Row: {
+          achieved_at: string
+          player_id: string
+          run_id: string | null
+          score: number
+          week_key: string
+        }
+        Insert: {
+          achieved_at?: string
+          player_id: string
+          run_id?: string | null
+          score: number
+          week_key: string
+        }
+        Update: {
+          achieved_at?: string
+          player_id?: string
+          run_id?: string | null
+          score?: number
+          week_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_best_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      weekly_winners_admin: {
+        Row: {
+          contact: string | null
+          needs_review: boolean | null
+          nickname: string | null
+          rank_no: number | null
+          run_id: string | null
+          score: number | null
+          week_key: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      current_week_key: { Args: never; Returns: string }
+      finalize_run: {
+        Args: {
+          p_max_combo: number
+          p_needs_review: boolean
+          p_perfects: number
+          p_player_id: string
+          p_run_id: string
+          p_score: number
+          p_tap_ticks: number[]
+          p_total_ticks: number
+        }
+        Returns: Json
+      }
+      last_week_winner: {
+        Args: never
+        Returns: {
+          nickname: string
+          score: number
+          week_key: string
+        }[]
+      }
+      previous_week_key: { Args: never; Returns: string }
+      weekly_leaderboard: {
+        Args: never
+        Returns: {
+          achieved_at: string
+          nickname: string
+          player_rank: number
+          score: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
