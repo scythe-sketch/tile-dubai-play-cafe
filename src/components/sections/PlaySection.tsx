@@ -71,19 +71,20 @@ export const PlaySection = () => {
             win it<span className="text-primary">.</span>
           </h2>
           <p className="play-subline">
-            top of the leaderboard every week wins {PRIZE.drinks} free drinks at tile.
+            top of the leaderboard every week wins a free games voucher + a complimentary drink at tile.
           </p>
           <div className="play-prize">
             <Trophy />
             <div>
               <h3>
-                this week's prize: {PRIZE.drinks} free drinks<span className="price-mark">*</span>
+                this week's prize: free games voucher + a drink<span className="price-mark">*</span>
               </h3>
               <p>
                 top score by sunday midnight wins<span className="price-mark">*</span>
               </p>
             </div>
           </div>
+          <p className="price-terms">winner announced on our instagram — @tiledubai</p>
           <p className="price-terms">{termsNote}</p>
           <Button size="lg" className="play-cta" onClick={() => setOpen(true)}>
             Play tile stack <Play />

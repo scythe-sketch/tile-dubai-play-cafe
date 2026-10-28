@@ -13,9 +13,8 @@ const LOCAL_BEST_KEY = 'tile.stack.localBest';
 const MUSIC_KEY = 'tile.stack.music';
 
 export const PRIZE = {
-  drinks: 2,
   headline: 'this week’s prize',
-  line: 'top score by sunday midnight wins 2 free drinks.',
+  line: 'top score by sunday midnight wins a free games voucher + a complimentary drink.',
   terms: '*terms & conditions apply',
 };
 
