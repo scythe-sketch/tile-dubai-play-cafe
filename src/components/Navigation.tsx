@@ -3,7 +3,7 @@ import { Menu, X, ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BrandLogo } from '@/components/BrandLogo';
 import { tableBookingUrl } from '@/lib/tile-content';
-const links = ['Games', 'Menu', 'Events', 'Coworking'];
+const links = ['Games', 'Play', 'Menu', 'Events', 'Coworking'];
 export const Navigation = () => {
  const [open,setOpen] = useState(false);
  const [active,setActive] = useState('');

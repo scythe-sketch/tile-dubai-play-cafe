@@ -5,7 +5,7 @@ export const ScrollEffects = () => {
  useEffect(() => {
   const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
   if (preference.matches) return;
-  const targets = document.querySelectorAll<HTMLElement>('.hero-copy > *, .tile-grid, .section-heading, .space-bento > *, .games-photo, .games-content > *, .menu-tabs, .menu-panel, .event-card, .private-events > *, .coworking-layout > *, .visit-layout > *, .footer-main > *');
+  const targets = document.querySelectorAll<HTMLElement>('.hero-copy > *, .tile-grid, .section-heading, .space-bento > *, .games-photo, .games-content > *, .play-copy > *, .play-preview, .menu-tabs, .menu-panel, .event-card, .private-events > *, .coworking-layout > *, .visit-layout > *, .footer-main > *');
   const animations: Animation[] = [];
   const observer = new IntersectionObserver(entries => {
    entries.forEach(entry => {
