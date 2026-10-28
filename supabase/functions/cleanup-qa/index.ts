@@ -6,6 +6,5 @@ Deno.serve(async req => {
   const { data: ps } = await c.from('players').select('id').ilike('nickname', 'qa check%');
   const ids = (ps ?? []).map(p => p.id);
   if (ids.length) { await c.from('weekly_best').delete().in('player_id', ids); await c.from('runs').delete().in('player_id', ids); await c.from('players').delete().in('id', ids); }
-  await c.from('runs').delete().is('player_id', null).gte('started_at', new Date(Date.now() - 3600_000).toISOString());
   return json({ removed: ids.length });
 });
