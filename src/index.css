@@ -267,3 +267,7 @@
  .play-score { font-size:20px; }
 }
 @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { animation:none !important; transition:none !important; } .bento-photo img,.games-photo img,.coworking-photo img { transform:none; } .you-tile { transform:translate(5px,-18px) rotate(-5deg); } }
+
+/* the play link in the menu bar stands out in a lighter green */
+.site-nav a.nav-play { color: hsl(var(--primary)); font-weight: 700; filter: brightness(1.35); }
+.site-nav a.nav-play:hover { filter: brightness(1.6); }

@@ -18,10 +18,10 @@ export const Navigation = () => {
  return <header className="site-nav dark-section">
   <nav className="page-width nav-inner" aria-label="Main navigation">
    <a href="#home" onClick={() => setOpen(false)}><BrandLogo /></a>
-   <div className="desktop-links">{links.map(label => <a key={label} href={`#${label.toLowerCase()}`} aria-current={active===label.toLowerCase()?'location':undefined}>{label}</a>)}</div>
+   <div className="desktop-links">{links.map(label => <a key={label} href={`#${label.toLowerCase()}`} className={label==="Play"?"nav-play":undefined} aria-current={active===label.toLowerCase()?'location':undefined}>{label}</a>)}</div>
    <Button asChild className="nav-book"><a href={tableBookingUrl} target="_blank" rel="noopener noreferrer">Book a table <ArrowUpRight /></a></Button>
    <Button variant="ghost" size="icon" className="mobile-toggle" aria-label={open?'Close menu':'Open menu'} aria-expanded={open} onClick={() => setOpen(!open)}>{open?<X/>:<Menu/>}</Button>
   </nav>
-  {open && <div className="mobile-links">{links.map(label => <a key={label} href={`#${label.toLowerCase()}`} onClick={() => setOpen(false)}>{label}</a>)}<Button asChild><a href={tableBookingUrl} target="_blank" rel="noopener noreferrer">Book a table</a></Button></div>}
+  {open && <div className="mobile-links">{links.map(label => <a key={label} href={`#${label.toLowerCase()}`} className={label==="Play"?"nav-play":undefined} onClick={() => setOpen(false)}>{label}</a>)}<Button asChild><a href={tableBookingUrl} target="_blank" rel="noopener noreferrer">Book a table</a></Button></div>}
  </header>;
 };
