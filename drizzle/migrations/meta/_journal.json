@@ -29,6 +29,34 @@
       "when": 1793201226853,
       "tag": "0003_admin_moderation",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793203898128,
+      "tag": "0004_live_taps_and_review",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793203971391,
+      "tag": "0005_finalize_reads_run_flag",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793204247947,
+      "tag": "0006_runs_tap_count",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793204300748,
+      "tag": "0007_runs_status_complete",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
+type Flagged = { id: string; playerId: string; nickname: string; banned: boolean; contact: string; score: number; perfects: number; perfectsAfterCap: number; deviation: number };
 type Row = { id: string; nickname: string; banned: boolean; created_at: string; week_score: number | null };
 
 export default function Admin() {
@@ -14,6 +15,7 @@ export default function Admin() {
   const [filter, setFilter] = useState('');
   const [message, setMessage] = useState('');
   const [mode, setMode] = useState<'in' | 'up'>('in');
+  const [flagged, setFlagged] = useState<Flagged[]>([]);
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
@@ -25,6 +27,8 @@ export default function Admin() {
     const { data, error } = await supabase.rpc('admin_list_players');
     if (error) { setIsAdmin(false); return; }
     setIsAdmin(true); setRows((data ?? []) as Row[]);
+    const f = await supabase.functions.invoke('admin-flagged', { body: {} });
+    setFlagged(((f.data as { rows?: Flagged[] } | null)?.rows ?? []));
   }, []);
 
   useEffect(() => { if (session) void load(); else setIsAdmin(false); }, [session, load]);
@@ -44,6 +48,15 @@ export default function Admin() {
 
   async function toggle(row: Row) {
     const { error } = await supabase.rpc('admin_set_banned', { p_player_id: row.id, p_banned: !row.banned });
+    if (error) setMessage('could not update. please try again.'); else void load();
+  }
+
+  async function approve(id: string) {
+    const { error } = await supabase.rpc('admin_approve_run', { p_run_id: id });
+    if (error) setMessage('could not approve. please try again.'); else void load();
+  }
+  async function ban(playerId: string) {
+    const { error } = await supabase.rpc('admin_set_banned', { p_player_id: playerId, p_banned: true });
     if (error) setMessage('could not update. please try again.'); else void load();
   }
 
@@ -72,6 +85,26 @@ export default function Admin() {
 
         {session && isAdmin && (
           <>
+            <section className="space-y-2">
+              <h2 className="text-xl font-semibold">flagged runs this week</h2>
+              <p className="text-sm text-muted-foreground">these scores are hidden from the board until you approve them.</p>
+              <ul className="divide-y divide-border rounded-2xl border border-border">
+                {flagged.map(f => (
+                  <li key={f.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                    <div>
+                      <div className="font-medium">{f.nickname} · {f.score}{f.banned && ' (removed)'}</div>
+                      <div className="text-xs text-muted-foreground">@{f.contact} · perfects {f.perfects} · after speed cap {f.perfectsAfterCap} · tap spread {f.deviation}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => void approve(f.id)}>approve</Button>
+                      {!f.banned && <Button size="sm" variant="destructive" onClick={() => void ban(f.playerId)}>ban</Button>}
+                    </div>
+                  </li>
+                ))}
+                {flagged.length === 0 && <li className="px-4 py-6 text-center text-muted-foreground">nothing flagged.</li>}
+              </ul>
+            </section>
+            <h2 className="text-xl font-semibold">players</h2>
             <Input placeholder="search nicknames" value={filter} onChange={e => setFilter(e.target.value)} />
             <ul className="divide-y divide-border rounded-2xl border border-border">
               {rows.filter(r => r.nickname.toLowerCase().includes(filter.toLowerCase())).map(r => (

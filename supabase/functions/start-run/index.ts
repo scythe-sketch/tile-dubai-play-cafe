@@ -1,6 +1,8 @@
 import { db, fail, ipHash, json, player, serve } from '../_shared/common.ts';
+import { generateTileParams } from '../_shared/tileStackSim.ts';
 // A run can start before sign-up: without a token it is issued to nobody and
-// claimed by the player who signs up and submits it (see finalize_run).
+// claimed by the player who signs up and submits it (see finalize_live_run).
+// The seed stays on the server; the browser only ever sees the next two tiles.
 serve(async (req, body) => {
   const client = db();
   const ip_hash = await ipHash(req);
@@ -18,5 +20,5 @@ serve(async (req, body) => {
   const seed = crypto.getRandomValues(new Uint32Array(1))[0];
   const { data, error: insertError } = await client.from('runs').insert({ player_id: owner?.id ?? null, seed, status: 'started', ip_hash }).select('id').single();
   if (insertError) throw insertError;
-  return json({ ok: true, runId: data.id, seed });
+  return json({ ok: true, runId: data.id, tiles: generateTileParams(seed, 2) });
 });

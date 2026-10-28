@@ -6,5 +6,6 @@
 - Use ScrollEffects for viewport entrances and photo drift, with reduced-motion support and visible content as the fallback; keep category transitions local to their sections.
 - Keep a single text bun.lock with public HTTPS npm tarball URLs and preserved integrity hashes; internal cache hostnames are not resolvable in all build environments.
 - Keep `src/game/tileStackSim.ts` and `supabase/functions/_shared/tileStackSim.ts` byte-identical: the server replays that exact copy to score every run.
-- Scores are only ever written by the server replay; the browser submits tap ticks and a run id, never a score.
+- Scores are only ever written by the server: the run seed never leaves the server, the browser is fed tile parameters two ahead and sends each tap live to the `tap` function, which checks real-time pace and replays the run; no endpoint accepts a score or a list of taps.
 - Runs may start before sign-up (unclaimed, rate-limited by IP); the first registered player to submit claims the run, so the first round always counts.
+- Runs flagged by the bot checks (needs_review) never reach weekly_best until an admin approves them, so public leaderboards stay clean without telling the player.

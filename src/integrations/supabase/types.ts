@@ -46,52 +46,79 @@ export type Database = {
       }
       runs: {
         Row: {
+          approved: boolean
           id: string
           ip_hash: string | null
           max_combo: number
           needs_review: boolean
+          pause_count: number
+          paused_at_ms: number | null
+          paused_ms: number
           perfects: number
+          perfects_after_cap: number
           player_id: string | null
           reject_reason: string | null
           score: number
           seed: number
+          server_start_ms: number | null
           started_at: string
           status: string
           submitted_at: string | null
+          tap_count: number
+          tap_deviation: number
+          tap_ms: number[]
           tap_ticks: number[]
           total_ticks: number
           week_key: string
         }
         Insert: {
+          approved?: boolean
           id?: string
           ip_hash?: string | null
           max_combo?: number
           needs_review?: boolean
+          pause_count?: number
+          paused_at_ms?: number | null
+          paused_ms?: number
           perfects?: number
+          perfects_after_cap?: number
           player_id?: string | null
           reject_reason?: string | null
           score?: number
           seed: number
+          server_start_ms?: number | null
           started_at?: string
           status?: string
           submitted_at?: string | null
+          tap_count?: number
+          tap_deviation?: number
+          tap_ms?: number[]
           tap_ticks?: number[]
           total_ticks?: number
           week_key?: string
         }
         Update: {
+          approved?: boolean
           id?: string
           ip_hash?: string | null
           max_combo?: number
           needs_review?: boolean
+          pause_count?: number
+          paused_at_ms?: number | null
+          paused_ms?: number
           perfects?: number
+          perfects_after_cap?: number
           player_id?: string | null
           reject_reason?: string | null
           score?: number
           seed?: number
+          server_start_ms?: number | null
           started_at?: string
           status?: string
           submitted_at?: string | null
+          tap_count?: number
+          tap_deviation?: number
+          tap_ms?: number[]
           tap_ticks?: number[]
           total_ticks?: number
           week_key?: string
@@ -172,6 +199,7 @@ export type Database = {
       }
     }
     Functions: {
+      admin_approve_run: { Args: { p_run_id: string }; Returns: undefined }
       admin_list_players: {
         Args: never
         Returns: {
@@ -187,6 +215,10 @@ export type Database = {
         Returns: undefined
       }
       current_week_key: { Args: never; Returns: string }
+      finalize_live_run: {
+        Args: { p_needs_review: boolean; p_player_id: string; p_run_id: string }
+        Returns: Json
+      }
       finalize_run: {
         Args: {
           p_max_combo: number

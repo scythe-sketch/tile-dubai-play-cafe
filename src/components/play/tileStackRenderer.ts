@@ -28,7 +28,7 @@ export function createRenderer(canvas: HTMLCanvasElement) {
     c.translate(f.reducedMotion ? 0 : f.shake / scale, f.cameraY);
     function tile(center: number, width: number, level: number) {
       const x = (center - width / 2) / U, y = base - level * step, tw = width / U;
-      const index = level > 0 && level % 10 === 0 ? 1 : 1 + ((f.sim.seed % 4 + level * 3) % 4);
+      const index = level > 0 && level % 10 === 0 ? 1 : 1 + (((f.sim.params[0]?.offset ?? 0) % 4 + level * 3) % 4);
       c.fillStyle = colors[index]; c.strokeStyle = colors[1]; c.lineWidth = 2;
       c.beginPath(); c.roundRect(x, y, tw, 56, Math.min(10, tw / 2)); c.fill(); if (index === 4) c.stroke();
       c.fillStyle = colors[0]; c.globalAlpha = .2; c.fillRect(x + 5, y + 5, Math.max(0, tw - 10), 5); c.globalAlpha = 1;

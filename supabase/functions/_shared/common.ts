@@ -40,6 +40,6 @@ export function serve(handler: (req: Request, body: Record<string, unknown>) => 
       try { body = JSON.parse(new TextDecoder().decode(bytes)); } catch { return fail('invalid_body', 400); }
       if (!body || typeof body !== 'object' || Array.isArray(body)) return fail('invalid_body', 400);
       return await handler(req, body as Record<string, unknown>);
-    } catch { return fail('please_try_again', 500); }
+    } catch (e) { console.error(e); return fail('please_try_again', 500); }
   });
 }

@@ -1,12 +1,13 @@
 /**
  * tile stack — the browser's only window onto the leaderboard backend.
  *
- * the browser never sends a score. it registers a device, asks the server for a
- * run seed, plays, and hands back the taps it made; the edge function replays
- * the run and decides what the score was. anything shown here as "your best" is
+ * the browser never sends a score or a list of taps. it starts a run, gets the
+ * first two tiles, and sends every tap live as it happens; the server keeps its
+ * own copy of the run, reveals one more tile per tap and decides the score. anything shown here as "your best" is
  * a local convenience and always gets replaced by the server's answer.
  */
 import { supabase } from '@/integrations/supabase/client';
+import type { TileParams } from '@/game/tileStackSim';
 
 const TOKEN_KEY = 'tile.stack.token';
 const LOCAL_BEST_KEY = 'tile.stack.localBest';
@@ -111,7 +112,7 @@ export async function registerPlayer(nickname: string, contact: string): Promise
   return { ok: true, token: data.token };
 }
 
-export type StartResult = { ok: boolean; runId?: string; seed?: number; reason?: string };
+export type StartResult = { ok: boolean; runId?: string; tiles?: TileParams[]; reason?: string };
 
 /** every round is a real round: before sign-up the run is unclaimed and gets claimed on save. */
 export async function startRun(): Promise<StartResult> {
@@ -125,8 +126,8 @@ export async function startRun(): Promise<StartResult> {
     return { ok: false, reason: 'network' };
   }
   if (token && data.reason === 'not_registered') { forgetPlayer(); return startRun(); }
-  if (!data.ok) return { ok: false, reason: data.reason ?? 'rejected' };
-  return { ok: true, runId: data.runId, seed: Number(data.seed) };
+  if (!data.ok || !Array.isArray(data.tiles)) return { ok: false, reason: data.reason ?? 'rejected' };
+  return { ok: true, runId: data.runId, tiles: data.tiles };
 }
 
 export type SubmitResult = {
@@ -137,20 +138,12 @@ export type SubmitResult = {
   rank?: number;
   isFirst?: boolean;
   newBest?: boolean;
+  /** this round is held for a check before it can appear on the board */
+  pending?: boolean;
   reason?: string;
 };
 
-export async function submitRun(runId: string, tapTicks: number[]): Promise<SubmitResult> {
-  const token = getDeviceToken();
-  if (!token) return { ok: false, reason: 'not_registered' };
-  const { data, error } = await supabase.functions.invoke('submit-run', {
-    body: { token, runId, tapTicks },
-  });
-  if (error || !data) return { ok: false, reason: 'network' };
-  if (!data.ok) {
-    if (data.reason === 'not_registered') forgetPlayer();
-    return { ok: false, reason: data.reason ?? 'rejected' };
-  }
+function toSubmit(data: Record<string, unknown>): SubmitResult {
   return {
     ok: true,
     score: Number(data.score),
@@ -158,7 +151,57 @@ export async function submitRun(runId: string, tapTicks: number[]): Promise<Subm
     rank: Number(data.rank),
     isFirst: Boolean(data.isFirst),
     newBest: Boolean(data.newBest),
+    pending: Boolean(data.pending),
   };
+}
+
+export type TapEvent = 'tap' | 'pause' | 'resume';
+export type TapResult =
+  | { ok: true; over: false; index?: number; tile?: TileParams }
+  | { ok: true; over: true; saved: boolean; score: number; result?: SubmitResult }
+  | { ok: false; reason: string };
+
+/** send one live event; retried up to 3 times before the run is treated as lost. */
+export async function sendTap(runId: string, tick: number, event: TapEvent = 'tap'): Promise<TapResult> {
+  const token = getDeviceToken();
+  let reason = 'network';
+  for (let attempt = 0; attempt < 4; attempt++) {
+    if (attempt) await new Promise(r => setTimeout(r, 250 * attempt));
+    try {
+      const { data, error } = await supabase.functions.invoke('tap', { body: { runId, tick, event, ...(token ? { token } : {}) } });
+      if (error || !data) continue;
+      if (!data.ok) {
+        reason = String(data.reason ?? 'rejected');
+        if (reason === 'busy' || reason === 'rate_limited') continue;
+        return { ok: false, reason };
+      }
+      if (event !== 'tap' || !data.over) return { ok: true, over: false, index: data.index, tile: data.tile };
+      return { ok: true, over: true, saved: Boolean(data.saved), score: Number(data.score), result: data.saved ? toSubmit(data) : undefined };
+    } catch { /* retry */ }
+  }
+  return { ok: false, reason };
+}
+
+/** save a finished round that was played before sign-up. */
+export async function submitRun(runId: string): Promise<SubmitResult> {
+  const token = getDeviceToken();
+  if (!token) return { ok: false, reason: 'not_registered' };
+  const { data, error } = await supabase.functions.invoke('submit-run', { body: { token, runId } });
+  if (error || !data) return { ok: false, reason: 'network' };
+  if (!data.ok) {
+    if (data.reason === 'not_registered') forgetPlayer();
+    return { ok: false, reason: data.reason ?? 'rejected' };
+  }
+  return toSubmit(data);
+}
+
+const REVIEW_KEY = 'tile.stack.review';
+/** a round of yours that is waiting on a check — only you ever see it. */
+export function reviewScore(): number {
+  try { return Number(window.localStorage.getItem(REVIEW_KEY)) || 0; } catch { return 0; }
+}
+export function setReviewScore(score: number) {
+  try { if (score > reviewScore()) window.localStorage.setItem(REVIEW_KEY, String(score)); } catch { /* ignore */ }
 }
 
 export function localBest(): number {
@@ -250,13 +293,13 @@ export function setMyNickname(nickname: string) {
 }
 
 /** the highest-scoring round that hasn't reached the leaderboard yet (e.g. played before sign-up or while offline). */
-export type PendingRun = { runId: string; tapTicks: number[]; score: number };
+export type PendingRun = { runId: string; score: number };
 const PENDING_KEY = 'tile.stack.pending';
 
 export function pendingRun(): PendingRun | null {
   try {
     const value = JSON.parse(window.localStorage.getItem(PENDING_KEY) ?? 'null');
-    return value && typeof value.runId === 'string' && Array.isArray(value.tapTicks) ? value : null;
+    return value && typeof value.runId === 'string' && typeof value.score === 'number' && !value.tapTicks ? value : null;
   } catch {
     return null;
   }
