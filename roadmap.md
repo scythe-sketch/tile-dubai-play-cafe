@@ -3,3 +3,4 @@
 - [x] Make all visible text lowercase and update location to Jumeirah Lake Towers.
 - [x] Populate clickable game categories; remove unwanted events and improve reservation contrast.
 - [x] Verify game/menu switching, scroll effects, and small-screen layout.
+- [x] Add the weekly "tile stack" challenge: server-verified scores, prize terms, leaderboard.
