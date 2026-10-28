@@ -85,10 +85,10 @@ export async function registerPlayer(nickname: string, contact: string): Promise
 
 export type StartResult = { ok: boolean; runId?: string; seed?: number; reason?: string };
 
+/** every round is a real round: before sign-up the run is unclaimed and gets claimed on save. */
 export async function startRun(): Promise<StartResult> {
   const token = getDeviceToken();
-  if (!token) return { ok: false, reason: 'not_registered' };
-  const { data, error } = await supabase.functions.invoke('start-run', { body: { token } });
+  const { data, error } = await supabase.functions.invoke('start-run', { body: token ? { token } : {} });
   if (error || !data) return { ok: false, reason: 'network' };
   if (!data.ok) return { ok: false, reason: data.reason ?? 'rejected' };
   return { ok: true, runId: data.runId, seed: Number(data.seed) };
@@ -97,6 +97,8 @@ export async function startRun(): Promise<StartResult> {
 export type SubmitResult = {
   ok: boolean;
   score?: number;
+  /** the player's best this week, which is what the rank refers to */
+  best?: number;
   rank?: number;
   isFirst?: boolean;
   newBest?: boolean;
@@ -114,6 +116,7 @@ export async function submitRun(runId: string, tapTicks: number[]): Promise<Subm
   return {
     ok: true,
     score: Number(data.score),
+    best: Number(data.best ?? data.score),
     rank: Number(data.rank),
     isFirst: Boolean(data.isFirst),
     newBest: Boolean(data.newBest),
