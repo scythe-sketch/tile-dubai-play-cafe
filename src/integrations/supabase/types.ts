@@ -106,6 +106,24 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       weekly_best: {
         Row: {
           achieved_at: string
@@ -154,6 +172,20 @@ export type Database = {
       }
     }
     Functions: {
+      admin_list_players: {
+        Args: never
+        Returns: {
+          banned: boolean
+          created_at: string
+          id: string
+          nickname: string
+          week_score: number
+        }[]
+      }
+      admin_set_banned: {
+        Args: { p_banned: boolean; p_player_id: string }
+        Returns: undefined
+      }
       current_week_key: { Args: never; Returns: string }
       finalize_run: {
         Args: {
@@ -167,6 +199,13 @@ export type Database = {
           p_total_ticks: number
         }
         Returns: Json
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
       last_week_winner: {
         Args: never
@@ -188,7 +227,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -315,6 +354,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin"],
+    },
   },
 } as const
