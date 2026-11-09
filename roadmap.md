@@ -8,3 +8,4 @@
 - [ ] decide: let players change nickname (awaiting user answer)
 - [x] admin moderation page at /admin
 - [x] best unsaved round is the one saved on sign-up
+- [ ] fix the google search description (stiff copy, shows &#39;, "AED 30* per person")
